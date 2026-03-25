@@ -1,0 +1,84 @@
+[project]
+name = "gha-hashpinner"
+description = """
+Update GitHub Actions configurations to use hashpins, instead of mutable pins, in a Dependabot-compatible way
+"""
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python",
+    "Topic :: Security",
+    "Topic :: Utilities",
+]
+keywords = [
+]
+dynamic = ["version"]
+dependencies = [
+    "pygithub>=2.9.0",
+    "pyyaml>=6.0.3",
+    "rich>=14.3.3",
+    "typer>=0.24.1",
+]
+
+[project.urls]
+Repository = "https://github.com/mfisher87/gha-hashpinner.git"
+Homepage = "https://github.com/mfisher87/gha-hashpinner"
+Issues = "https://github.com/mfisher87/gha-hashpinner/issues"
+
+[project.scripts]
+gha-hashpinner = "gha_hashpinner.cli:cli"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19.1",
+]
+test = [
+    "pytest",
+    "pytest-cov",
+]
+
+
+[build-system]
+requires = ["hatchling>=1.5.0", "hatch-vcs", "jupyterlab>=4.0.0,<5"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.sdist]
+exclude = [".github"]
+
+[tool.hatch.build.hooks.version]
+path = "src/gha_hashpinner/_version.py"
+
+
+[tool.mypy]
+packages = ["src/gha_hashpinner"]
+python_version = "3.12"
+strict = true
+
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "ANN002",  # Require type annotation for *args
+  "ANN003",  # Require type annotation for **kwargs
+  "COM812",  # Require trailing commas (the Ruff formatter does this)
+  "EM101",   # Forbid literal strings in exception messages
+  "EM102",   # Forbid f-strings in exception messages
+  "FIX",     # FIXME, TODO, etc. comments
+  "G004",    # Forbid f-strings in log messages
+  "INP",     # Forbid implicit namespace packages
+  "TD",      # Require standards for TODO comments
+  "TRY003",  # Forbid "long" exception messages
+]
