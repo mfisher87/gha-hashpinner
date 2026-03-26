@@ -41,10 +41,11 @@ gha-hashpinner = "gha_hashpinner.cli:cli"
 [dependency-groups]
 dev = [
     "mypy>=1.19.1",
+    "types-pyyaml>=6.0.12.20250915",
 ]
 test = [
-    "pytest",
-    "pytest-cov",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.1.0",
 ]
 
 
@@ -63,7 +64,7 @@ path = "src/gha_hashpinner/_version.py"
 
 
 [tool.mypy]
-packages = ["src/gha_hashpinner"]
+packages = ["gha_hashpinner", "tests"]
 python_version = "3.12"
 strict = true
 
@@ -71,14 +72,26 @@ strict = true
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-  "ANN002",  # Require type annotation for *args
-  "ANN003",  # Require type annotation for **kwargs
-  "COM812",  # Require trailing commas (the Ruff formatter does this)
-  "EM101",   # Forbid literal strings in exception messages
-  "EM102",   # Forbid f-strings in exception messages
-  "FIX",     # FIXME, TODO, etc. comments
-  "G004",    # Forbid f-strings in log messages
-  "INP",     # Forbid implicit namespace packages
-  "TD",      # Require standards for TODO comments
-  "TRY003",  # Forbid "long" exception messages
+    "ANN002",  # Require type annotation for *args
+    "ANN003",  # Require type annotation for **kwargs
+    "D203",    # Require blank line between class signature and docstring
+    "D213",    # Require multi-line docstring summary on 2nd line
+    "COM812",  # Require trailing commas (the Ruff formatter does this)
+    "EM101",   # Forbid literal strings in exception messages
+    "EM102",   # Forbid f-strings in exception messages
+    "FIX",     # FIXME, TODO, etc. comments
+    "G004",    # Forbid f-strings in log messages
+    "INP",     # Forbid implicit namespace packages
+    "TD",      # Require standards for TODO comments
+    "TRY003",  # Forbid "long" exception messages
+]
+
+[tool.ruff.lint.per-file-ignores]
+"{**/tests/**/*.py}" = [
+    "ARG001",   # Forbid unused function arguments (e.g. test fixtures)
+    "D101",     # Require docstrings for every method
+    "E501",     # Limit line length
+    "PLR2004",  # Forbid magic value in comparisons
+    "RUF015",   # Prefer next() for single-item slice
+    "S101",     # Forbid assertion statements
 ]
