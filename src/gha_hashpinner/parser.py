@@ -1,20 +1,11 @@
 """Functions for parsing mutable action references from workflow files."""
 
-import re
 from pathlib import Path
 
 import yaml
 
 from gha_hashpinner.models import ActionReference
-
-# Match a github-style action ref, but not local actions (`./<...>`) or docker actions
-# (`docker://<...>`)
-ACTION_PATTERN = re.compile(
-    r"^(?P<owner>[a-zA-Z0-9_-]+)/(?P<repo>[a-zA-Z0-9_-]+)@(?P<ref>[a-zA-Z0-9./_-]+)$"
-)
-# A Git commit sha is 40 hexadecimal characters
-SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
-USES_PATTERN = re.compile(r"uses:\s+[\"']?([^\"'#\s]+)")
+from gha_hashpinner.regex import ACTION_PATTERN, SHA_PATTERN, USES_PATTERN
 
 
 def find_all_mutable_action_references(path: Path) -> dict[Path, list[ActionReference]]:

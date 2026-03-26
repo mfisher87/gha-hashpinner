@@ -3,281 +3,29 @@
 TODO: Reduce distance between mock data and expected values.
 """
 
-from collections.abc import Callable
 from pathlib import Path
-from textwrap import dedent
-from typing import NotRequired, TypedDict, Unpack
 
 import pytest
 
 from gha_hashpinner.parser import (
-    ACTION_PATTERN,
-    SHA_PATTERN,
     _discover_workflow_files,
     _parse_workflow_file,
     find_all_mutable_action_references,
 )
 
-WORKFLOW_WITH_MUTABLE_PINS = dedent("""
-    name: "Test"
-    on: push
-    jobs:
-        test:
-            runs_on: ubuntu-latest
-            steps:
-                # One quoted, one not
-                - uses: actions/checkout@v4
-                - uses: "actions/setup-python@v5"
-""").strip()
-
-WORKFLOW_WITH_IMMUTABLE_PINS = dedent("""
-    name: "Test"
-    on: push
-    jobs:
-        test:
-            runs_on: ubuntu-latest
-            steps:
-                # One quoted, one not
-                - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v4
-                - uses: "actions/setup-python@deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"  #v5
-""").strip()
-
-
-WORKFLOW_WITH_MUTABLE_AND_IMMUTABLE_PINS = dedent("""
-    name: "Test"
-    on: push
-    jobs:
-        test:
-            runs_on: ubuntu-latest
-            steps:
-                - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v4
-                - uses: actions/setup-python@v5
-""").strip()
-
-
-WORKFLOW_WITH_QUOTED_MUTABLE_AND_IMMUTABLE_PINS = dedent("""
-    name: "Test"
-    on: push
-    jobs:
-        test:
-            runs_on: ubuntu-latest
-            steps:
-                - uses: 'actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3'  # v4
-                - uses: 'actions/setup-python@v5'
-""").strip()
-
-
-WORKFLOW_WITH_COMMENTS = dedent("""
-    name: "Test"
-    on: push
-    jobs:
-        test:
-            runs_on: ubuntu-latest
-            steps:
-                - uses: actions/checkout@v4  # Checkout
-                - uses: "actions/setup-python@v5" # Setup Python
-""").strip()
-
-
-WORKFLOW_WITH_LOCAL_AND_DOCKER_ACTIONS = dedent("""
-    name: "Test"
-    on: push
-    jobs:
-      test:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: "./local-action"
-            - uses: docker://alpine:latest
-            - uses: actions/checkout@v4
-""").strip()
-
-
-COMPLEX_WORKFLOW = dedent("""
-    name: "Complex Test"
-    on: [push, pull_request]
-
-    jobs:
-      build:
-        runs-on: ubuntu-latest
-        steps:
-            - name: "Checkout"
-              uses: actions/checkout@v4
-
-            - name: "Setup Node"
-              uses: actions/setup-node@v3
-
-            - name: "Local action"
-              uses: ./github/actions/custom
-
-      test:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-            - uses: docker://node:18
-            - uses: codecov/codecov-action@v3
-
-      deploy:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v4
-            - uses: actions/deploy@main
-""").strip()
-
-
-WORKFLOW_WITH_NO_JOBS = dedent("""
-    name: Test
-    on: push
-    jobs: {}
-""").strip()
-
-
-WORKFLOW_WITH_BORDERLINE_YAML = dedent("""
-    name: "Test"
-    on: push
-    jobs:
-      test:
-        steps:
-          - uses:actions/checkout@v4
-""").strip()
-
-
-WORKFLOW_WITH_INVALID_YAML = dedent("""
-    name: "Test"
-    on: push
-    jobs:
-      test:
-        steps:
-          - uses: actions/checkout@v4
-        invalid: [unclosed list
-""").strip()
-
-
-class MakeWorkflowFileArgs(TypedDict):
-    content: str
-    name: NotRequired[str]
-
-
-# Ugh
-type MakeWorkflowFileFunc = Callable[[Unpack[MakeWorkflowFileArgs]], Path]
-
-
-@pytest.fixture
-def make_workflow_file(tmp_path: Path) -> MakeWorkflowFileFunc:
-    """Create a single workflow file from YAML content.
-
-    Usage:
-        workflow_file = make_workflow_file(content=WORKFLOW_WITH_MUTABLE_PINS)
-        workflow_file = make_workflow_file(content=COMPLEX_WORKFLOW, name="custom.yml")
-
-    Returns:
-        Path to created workflow file.
-
-    """
-
-    def _make_file(*, content: str, name: str = "test.yml") -> Path:
-        workflow_file = tmp_path / name
-        workflow_file.write_text(content)
-        return workflow_file
-
-    return _make_file
-
-
-# Ugh
-type MakeWorkflowsDirFunc = Callable[[dict[str, str]], Path]
-
-
-@pytest.fixture
-def make_workflows_dir(tmp_path: Path) -> MakeWorkflowsDirFunc:
-    """Create .github/workflows directory with multiple files.
-
-    Usage:
-        workflows = make_workflows_dir({
-            "test1.yml": WORKFLOW_WITH_MUTABLE_PINS,
-            "test2.yml": COMPLEX_WORKFLOW,
-        })
-
-    Returns:
-        "Project" root directory
-
-    """
-
-    def _make_dir(workflow_files: dict[str, str]) -> Path:
-        workflows_dir = tmp_path / ".github" / "workflows"
-        workflows_dir.mkdir(parents=True)
-
-        for filename, content in workflow_files.items():
-            workflow_path = workflows_dir / filename
-            workflow_path.write_text(content)
-
-        return tmp_path
-
-    return _make_dir
-
-
-class TestPatterns:
-    """Test regex patterns."""
-
-    @pytest.mark.parametrize(
-        "uses_str",
-        [
-            "actions/checkout@v4",
-            "astral-sh/setup-uv@v7",
-            "owner/repo@main",
-            "owner/repo@v1.2.3",
-            "my-org/my-action@release-branch",
-        ],
-    )
-    def test_action_pattern_matches_valid_action(self, uses_str: str) -> None:
-        """ACTION_PATTERN should match "uses:" values matching actions on GitHub."""
-        assert ACTION_PATTERN.match(uses_str)
-
-    def test_action_patern_captures_groups(self) -> None:
-        """ACTION_PATTERN should capture groups from "uses:" value."""
-        match = ACTION_PATTERN.match("actions/checkout@v4")
-        assert match is not None
-        assert match.group("owner") == "actions"
-        assert match.group("repo") == "checkout"
-        assert match.group("ref") == "v4"
-
-    @pytest.mark.parametrize(
-        "uses_str",
-        [
-            "./local-action",
-            "docker://alpine:latest",
-            "just-a-string",
-            "actions/checkout",
-        ],
-    )
-    def test_action_pattern_rejects(self, uses_str: str) -> None:
-        """ACTION_PATTERN should reject local, docker, and invalid "uses" values."""
-        assert not ACTION_PATTERN.match(uses_str)
-
-    @pytest.mark.parametrize(
-        "sha",
-        [
-            "8f4b7f84864484a7bf31766abe9204da3cbe65b3",
-            "0123456789abcdef0123456789abcdef01234567",
-            "baddadbaddadbaddadbaddadbaddadbaddadbadd",
-            "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-        ],
-    )
-    def test_sha_pattern_matches_valid_sha(self, sha: str) -> None:
-        """SHA_PATTERN should match 40-character hexadecimal strings."""
-        assert SHA_PATTERN.match(sha)
-
-    @pytest.mark.parametrize(
-        "sha",
-        [
-            "v4",
-            "main",
-            "8f4b7f8",  # Too short
-            "8f4b7f84864484a7bf31766abe9204da3cbe65b3a",  # Too long
-            "gggggggggggggggggggggggggggggggggggggggg",  # "g" is not valid hexadecimal
-        ],
-    )
-    def test_sha_pattern_rejects_invalid(self, sha: str) -> None:
-        """SHA_PATTERN should reject non-SHA strings."""
-        assert not SHA_PATTERN.match(sha)
+from .mock_workflows import (
+    COMPLEX_WORKFLOW,
+    WORKFLOW_WITH_BORDERLINE_YAML,
+    WORKFLOW_WITH_COMMENTS,
+    WORKFLOW_WITH_IMMUTABLE_PINS,
+    WORKFLOW_WITH_INVALID_YAML,
+    WORKFLOW_WITH_LOCAL_AND_DOCKER_ACTIONS,
+    WORKFLOW_WITH_MUTABLE_AND_IMMUTABLE_PINS,
+    WORKFLOW_WITH_MUTABLE_PINS,
+    WORKFLOW_WITH_NO_JOBS,
+    WORKFLOW_WITH_QUOTED_MUTABLE_AND_IMMUTABLE_PINS,
+)
+from .types import MakeWorkflowFileFunc, MakeWorkflowsDirFunc
 
 
 class TestParseWorkflowFile:
