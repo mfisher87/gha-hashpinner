@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 
-@dataclass
+@dataclass(frozen=True)
 class ActionReference:
     """A GitHub Action reference (`uses: ...`) in a workflow."""
 
@@ -14,7 +14,7 @@ class ActionReference:
     full_string: str
 
 
-@dataclass
+@dataclass(frozen=True)
 class HashPinnedActionReference:
     """An ActionReference enriched with an immutable SHA & comment.
 

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from gha_hashpinner.models import ActionReference
+from gha_hashpinner.models import ActionReference, HashPinnedActionReference
 
 from .types import MakeWorkflowFileFunc, MakeWorkflowsDirFunc
 
@@ -79,4 +79,36 @@ def mock_action_ref_python() -> ActionReference:
         ref="v5",
         line_number=11,
         full_string="actions/setup-python@v5",
+    )
+
+
+@pytest.fixture
+def mock_pinned_action_ref_checkout() -> HashPinnedActionReference:
+    """Sample pinned reference for actions/checkout@v4."""
+    return HashPinnedActionReference(
+        action_reference=ActionReference(
+            owner="actions",
+            repo="checkout",
+            ref="v4",
+            line_number=7,
+            full_string="actions/checkout@v4",
+        ),
+        sha="abc123def456abc123def456abc123def456abc123",
+        comment="v4",
+    )
+
+
+@pytest.fixture
+def mock_pinned_action_ref_python() -> HashPinnedActionReference:
+    """Sample pinned reference for actions/setup-python@v5."""
+    return HashPinnedActionReference(
+        action_reference=ActionReference(
+            owner="actions",
+            repo="setup-python",
+            ref="v5",
+            line_number=8,
+            full_string="actions/setup-python@v5",
+        ),
+        sha="def456abc123def456abc123def456abc123def456",
+        comment="v5",
     )
