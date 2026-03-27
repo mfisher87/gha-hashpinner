@@ -20,7 +20,7 @@ CWD = Path.cwd()
 
 
 @cli.command()
-def pin(
+def cli_root(
     *,
     path: Annotated[
         Path,
@@ -52,6 +52,17 @@ def pin(
             ),
         ),
     ] = False,
+) -> None:
+    """Pin GitHub Actions to immutable SHAs with Dependabot compatibility."""
+    pin(path=path, token=token, dry_run=dry_run, check=check)
+
+
+def pin(
+    *,
+    path: Path,
+    token: str | None,
+    dry_run: bool,
+    check: bool,
 ) -> None:
     """Pin GitHub Actions to immutable SHAs with Dependabot compatibility."""
     try:
@@ -130,7 +141,7 @@ def _process_refs(
             _print_change(ref)
 
         if not dry_run:
-            update_workflow_file(workflow_file, immutable_refs)
+            update_workflow_file(workflow_file, refs=immutable_refs)
 
 
 def _print_change(immutable_ref: HashPinnedActionReference) -> None:
