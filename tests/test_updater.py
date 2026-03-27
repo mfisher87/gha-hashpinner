@@ -349,13 +349,14 @@ class TestUpdateWorkflowFile:
             jobs:
               test:
                 steps:
-                  - uses: actions/checkout@v4  # Get the code
+                  - name: "Checkout"
+                    uses: actions/checkout@v4  # Get the code
         """).strip()
         mock_pinned_action_ref_checkout = replace(
             mock_pinned_action_ref_checkout,
             action_reference=replace(
                 mock_pinned_action_ref_checkout.action_reference,
-                line_number=5,
+                line_number=6,
             ),
         )
 

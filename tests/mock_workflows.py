@@ -35,7 +35,8 @@ WORKFLOW_WITH_MUTABLE_AND_IMMUTABLE_PINS = dedent("""
             runs_on: ubuntu-latest
             steps:
                 - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v4
-                - uses: actions/setup-python@v5
+                - name: "Doop!"
+                  uses: actions/setup-python@v5
 """).strip()
 
 

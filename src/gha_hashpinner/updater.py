@@ -63,7 +63,7 @@ def _replace_action_in_line(
 
     # TODO: Import!
     pattern = re.compile(
-        r"(\s*-\s*uses:\s*)"  # Group 1: The key, with leading and trailing whitespace
+        r"(\s*-?\s*uses:\s*)"  # Group 1: The key, with leading and trailing whitespace
         r"([\"']?)"  # Group 2: Optional opening quote
         + re.escape(mutable.full_string)  # The original ref string
         + r"([\"']?)"  # Group 3: Optional closing quote

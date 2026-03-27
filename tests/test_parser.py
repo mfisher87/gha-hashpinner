@@ -50,7 +50,7 @@ class TestParseWorkflowFile:
                 WORKFLOW_WITH_MUTABLE_AND_IMMUTABLE_PINS,
                 1,
                 [
-                    ("actions", "setup-python", "v5", "actions/setup-python@v5", 8),
+                    ("actions", "setup-python", "v5", "actions/setup-python@v5", 9),
                 ],
                 id="workflow-with-mutable-and-immutable-pins",
             ),
