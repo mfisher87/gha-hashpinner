@@ -4,6 +4,8 @@ from pathlib import Path
 
 import pytest
 
+from gha_hashpinner.models import ActionReference
+
 from .types import MakeWorkflowFileFunc, MakeWorkflowsDirFunc
 
 
@@ -54,3 +56,27 @@ def make_workflows_dir(tmp_path: Path) -> MakeWorkflowsDirFunc:
         return tmp_path
 
     return _make_dir
+
+
+@pytest.fixture
+def mock_action_ref_checkout() -> ActionReference:
+    """Mock action reference for 'actions/checkout@v4'."""
+    return ActionReference(
+        owner="actions",
+        repo="checkout",
+        ref="v4",
+        line_number=10,
+        full_string="actions/checkout@v4",
+    )
+
+
+@pytest.fixture
+def mock_action_ref_python() -> ActionReference:
+    """Mock action reference for 'actions/setup-python@v5'."""
+    return ActionReference(
+        owner="actions",
+        repo="setup-python",
+        ref="v5",
+        line_number=11,
+        full_string="actions/setup-python@v5",
+    )

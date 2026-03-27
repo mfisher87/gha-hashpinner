@@ -1,6 +1,11 @@
 """Resolves mutable pins to immutable pins by querying the GitHub API."""
 
+from github import Github, UnknownObjectException
+from github.Repository import Repository
+
 from gha_hashpinner.models import ActionReference, HashPinnedActionReference
+
+type GhResolutionCache = dict[tuple[str, str, str], str]
 
 
 def resolve_action_references(
@@ -8,7 +13,131 @@ def resolve_action_references(
     *,
     token: str | None = None,
 ) -> list[HashPinnedActionReference]:
-    """Resolve `ActionReferences` to `HashPinnedActionReferences`.
+    """Resolve `ActionReference`s to `HashPinnedActionReference`s using GitHub API.
 
-    Look up immutable refs using the GitHub API.
+    Actions that fail to resolve are skipped.
+
+    Args:
+        action_refs: List of mutable `ActionReference`s to resolve
+        token: Optional GitHub token for API access (recommended to avoid rate limits)
+
+    Returns:
+        List of resolved `HashPinnedActionReference`s (n <= `len(action_refs)`)
+
     """
+    gh = Github(token) if token else Github()
+    gh_resolution_cache: GhResolutionCache = {}
+
+    resolved: list[HashPinnedActionReference] = []
+    for action_ref in action_refs:
+        sha = _resolve_ref_to_commit_sha(
+            gh=gh,
+            owner=action_ref.owner,
+            repo=action_ref.repo,
+            ref=action_ref.ref,
+            cache=gh_resolution_cache,
+        )
+        resolved.append(
+            HashPinnedActionReference(
+                action_reference=action_ref,
+                sha=sha,
+                comment=action_ref.ref,
+            )
+        )
+
+    return resolved
+
+
+def _resolve_ref_to_commit_sha(
+    *,
+    gh: Github,
+    owner: str,
+    repo: str,
+    ref: str,
+    cache: GhResolutionCache | None = None,
+) -> str:
+    """Look up a mutable ref in GitHub and return a corresponding immutable ref.
+
+    Caches results on `(owner, repo, ref)` to limit GH API calls and make best effort to
+    avoid rate limiting.
+
+    Args:
+        gh: An instance of a `pygithub.Github` client
+        owner: Repository owner
+        repo: Repository name
+        ref: Mutable ref
+        cache: A cache to use to limit GH API usage
+
+    Returns:
+        An immutable commit SHA
+
+    Raises:
+        UnknownObjectException: Repo doesn't exist or is inaccessible
+        GitHubException: API error, e.g. rate limit
+        ValueError: The provided ref wasn't found as a tag or branch
+
+    """
+    if cache is not None:
+        cache_key = (owner, repo, ref)
+        cached = cache.get(cache_key, None)
+        if cached is not None:
+            return cached
+
+    repo_obj = gh.get_repo(f"{owner}/{repo}")
+
+    if sha := _resolve_branch(repo=repo_obj, branch_name=ref):
+        if cache is not None:
+            cache[cache_key] = sha
+        return sha
+
+    if sha := _resolve_tag(repo=repo_obj, tag_name=ref):
+        if cache is not None:
+            cache[cache_key] = sha
+        return sha
+
+    raise ValueError(f"The ref '{ref}' was not found on GitHub as a tag or branch.")
+
+
+def _resolve_branch(*, repo: Repository, branch_name: str) -> str | None:
+    """Attempt to resolve a ref as a branch.
+
+    Args:
+        repo: GitHub repository object
+        branch_name: A ref that will be treated as a branch name
+
+    Returns:
+        Corresponding commit SHA if branch exists, otherwise None
+
+    """
+    try:
+        return repo.get_branch(branch_name).commit.sha
+    except UnknownObjectException:
+        return None
+
+
+def _resolve_tag(*, repo: Repository, tag_name: str) -> str | None:
+    """Attempt to resolve a ref as a tag.
+
+    Args:
+        repo: GitHub repository object
+        tag_name: A ref that will be treated as a tag name
+
+    Returns:
+        Corresponding commit SHA if tag exists, otherwise None
+
+    """
+    try:
+        ref = repo.get_git_ref(f"tags/{tag_name}")
+
+        if ref.object.type == "tag":
+            # Annotated tag: These are separate git objects. We need to get the tag
+            # object before dereferencing.
+            # The ref.object.sha seems to be a magic string "tag_object_sha" here:
+            sha = repo.get_git_tag(ref.object.sha).object.sha
+        else:
+            # Lightweight tag: Simple pointer. We just need to dereference it.
+            sha = ref.object.sha
+    except UnknownObjectException:
+        return None
+
+    return sha

@@ -94,4 +94,5 @@ ignore = [
     "PLR2004",  # Forbid magic value in comparisons
     "RUF015",   # Prefer next() for single-item slice
     "S101",     # Forbid assertion statements
+    "S106",     # Forbid hardcoded passwords (in tests, we use dummy tokens)
 ]
