@@ -10,7 +10,7 @@ def make_branch_mock(*, sha: str) -> Mock:
     return branch
 
 
-def make_tag_mock(*, sha: str, is_annotated: bool = False) -> Mock:
+def make_tag_mock(*, sha: str, is_annotated: bool = False) -> Mock | tuple[Mock, str]:
     """Create a mock tag reference with the given SHA.
 
     Args:
@@ -24,6 +24,7 @@ def make_tag_mock(*, sha: str, is_annotated: bool = False) -> Mock:
         ref.object.type = "tag"
         ref.object.sha = "tag_object_sha"
         return ref, sha  # Return both for annotated tags
+
     ref.object.type = "commit"
     ref.object.sha = sha
     return ref

@@ -3,7 +3,7 @@
 from unittest.mock import Mock, patch
 
 import pytest
-from github import Github, GithubException, UnknownObjectException
+from github import GithubException, UnknownObjectException
 
 from gha_hashpinner.models import ActionReference
 from gha_hashpinner.resolver import (
@@ -22,7 +22,7 @@ class TestResolveActionReferences:
     @patch_gh_client
     def test_resolve_single_action(
         self,
-        mock_gh_cls: Github,
+        mock_gh_cls: Mock,
         mock_action_ref_checkout: ActionReference,
     ) -> None:
         """Should resolve a single action reference."""
@@ -43,7 +43,7 @@ class TestResolveActionReferences:
     @patch_gh_client
     def test_resolve_multiple_actions(
         self,
-        mock_gh_cls: Github,
+        mock_gh_cls: Mock,
         mock_action_ref_checkout: ActionReference,
         mock_action_ref_python: ActionReference,
     ) -> None:
@@ -71,7 +71,7 @@ class TestResolveActionReferences:
     @patch_gh_client
     def test_resolve_with_cache(
         self,
-        mock_gh_cls: Github,
+        mock_gh_cls: Mock,
         mock_action_ref_checkout: ActionReference,
     ) -> None:
         """Should cache duplicate repo/ref combinations."""
@@ -91,7 +91,7 @@ class TestResolveActionReferences:
     @patch_gh_client
     def test_resolve_skips_failures(
         self,
-        mock_gh_cls: Github,
+        mock_gh_cls: Mock,
         mock_action_ref_checkout: ActionReference,
         mock_action_ref_python: ActionReference,
     ) -> None:
@@ -114,7 +114,7 @@ class TestResolveActionReferences:
     @patch_gh_client
     def test_resolve_without_token(
         self,
-        mock_gh_cls: Github,
+        mock_gh_cls: Mock,
         mock_action_ref_checkout: ActionReference,
     ) -> None:
         """Should work without authentication token."""
