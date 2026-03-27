@@ -150,7 +150,7 @@ def _print_change(immutable_ref: HashPinnedActionReference) -> None:
 
     console.print(
         f"  [green]✓ Line {mutable.line_number:3d}:"
-        f" [dim]{mutable.full_string:50s}[/dim] ->"
+        f" [dim]{mutable.full_string.strip()}[/dim] ->"
         f" [bold]{immutable_ref.short_string}[/bold]"
         f" [dim]# {immutable_ref.comment}[/dim]"
     )
