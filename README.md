@@ -99,3 +99,14 @@ I wanted something I could install with `uv tool install`.
 
 LLMs plus a dash of review and engineering judgement make it fast and easy to build
 tools like this.
+
+
+## Limitations
+
+* This tool detects mutable refs with regex, i.e. a 40-character hexadecimal string is
+  considered to be an immutable ref.
+  There's no way to be sure without making API calls.
+  See [the relevant issue (#13)](https://github.com/mfisher87/gha-hashpinner/issues/13)
+  for details.
+* When not given an explicit file path, only checks workflow files in
+  `.github/workflows`.
