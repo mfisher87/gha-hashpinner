@@ -369,6 +369,7 @@ class TestUpdateWorkflowFile:
             jobs:
               test:
                 steps:
-                  - uses: actions/checkout@abc123def456abc123def456abc123def456abc123  # v4
+                  - name: "Checkout"
+                    uses: actions/checkout@abc123def456abc123def456abc123def456abc123  # v4
         """).strip()
         assert actual == expected
