@@ -149,9 +149,9 @@ def _print_change(immutable_ref: HashPinnedActionReference) -> None:
     mutable = immutable_ref.action_reference
 
     console.print(
-        f"  [green]✓ Line {mutable.line_number:3d}:"
-        f" [dim]{mutable.full_string.strip()}[/dim] ->"
-        f" [bold]{immutable_ref.short_string}[/bold]"
+        f"  [green]✓ Line {mutable.line_number:5d}:"
+        f" [dim]{mutable.full_string.strip()}[/dim]"
+        f"\n             -> [bold]{immutable_ref.short_string}[/bold]"
         f" [dim]# {immutable_ref.comment}[/dim]"
     )
 
