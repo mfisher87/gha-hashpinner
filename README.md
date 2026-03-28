@@ -57,6 +57,23 @@ gha-hashpinner .github/workflows/my-workflow.yml
 ```
 
 
+### GitHub API rate limiting
+
+The GitHub API rate-limits unauthenticated requests to 60/hour.
+You may want to provide a token with the `--token=` argument to avoid rate limits.
+This tool only needs read access.
+
+It's very important to [minimize access granted to any tool to only what's required](https://en.wikipedia.org/wiki/Principle_of_least_privilege).
+**Only use fine-grained personal access tokens (PATs) with _no extra permissions_.**
+**Never click the "Add permissions" button.**
+
+In other words, keep everything default.
+The only thing selected in the fine-grained PAT UI should be "Public repositories (Read-only access to
+public repositories)".
+If you need to run this tool against private repositories, select "All repositories" or
+"Only select repositories".
+
+
 ### With GitHub Actions
 
 TODO
