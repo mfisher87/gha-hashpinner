@@ -55,14 +55,37 @@ class TestReplaceActionInLine:
             ),
         ],
     )
-    def test_replace_preserves_indentation(
+    def test_replace(
         self,
         mock_pinned_action_ref_checkout: HashPinnedActionReference,
         line: str,
         expected: str,
     ) -> None:
-        """Should preserve indentation at various levels."""
+        """Should successfully replace the mutable pin with an immutable one.
+
+        Comments should be replaced. Formatting (i.e. indentation and leading spaces)
+        should be unaltered.
+        """
         actual = _replace_action_in_line(line, ref=mock_pinned_action_ref_checkout)
+        assert actual == expected
+
+    @pytest.mark.parametrize(
+        ("line", "expected"),
+        [
+            (
+                "  - uses: 'jupyterlab/maintainer-tools/.github/actions/enforce-label@v1'\n",
+                "  - uses: 'jupyterlab/maintainer-tools/.github/actions/enforce-label@123abc123abc123abc123abc123abc123abc123abc'  # v1\n",
+            ),
+        ],
+    )
+    def test_replace_with_subpath(
+        self,
+        mock_pinned_action_ref_enforcelabel: HashPinnedActionReference,
+        line: str,
+        expected: str,
+    ) -> None:
+        """Should successfully replace mutable pins for actions with subpaths."""
+        actual = _replace_action_in_line(line, ref=mock_pinned_action_ref_enforcelabel)
         assert actual == expected
 
 

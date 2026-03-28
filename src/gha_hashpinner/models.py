@@ -3,9 +3,9 @@
 from dataclasses import dataclass
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class ActionReference:
-    """A GitHub Action reference (`uses: ...`) in a workflow."""
+    """A GitHub Action reference (value of a `uses: ...` key) in a workflow."""
 
     owner: str
     repo: str
@@ -13,8 +13,27 @@ class ActionReference:
     line_number: int
     full_string: str
 
+    # Some repos contain multiple actions, using a subpath to differentiate. E.g.:
+    #     jupyterlab/maintainer-tools/.github/actions/enforce-label@v1
+    subpath: str | None = None
 
-@dataclass(frozen=True)
+    @property
+    def full_string_without_ref(self) -> str:
+        """Full action reference string without ref."""
+        string = f"{self.owner}/{self.repo}"
+        if self.subpath:
+            string += self.subpath
+        return string
+
+    def __post_init__(self) -> None:
+        """Validate."""
+        if self.subpath and not self.subpath.startswith("/"):
+            raise ValueError(
+                f"subpath attribute must start with '/'. Received {self.subpath}"
+            )
+
+
+@dataclass(frozen=True, kw_only=True)
 class HashPinnedActionReference:
     """An ActionReference enriched with an immutable SHA & comment.
 
@@ -28,12 +47,16 @@ class HashPinnedActionReference:
 
     @property
     def full_string(self) -> str:
-        """Generate the full string value of a `uses:` key for a GHA workflow."""
-        return f"{self.action_reference.owner}/{self.action_reference.repo}@{self.sha}"
+        """Generate a full immutable action reference string.
+
+        Does not include a comment, this is just the value for the `uses:` key.
+        """
+        return f"{self.action_reference.full_string_without_ref}@{self.sha}"
 
     @property
     def short_string(self) -> str:
-        """A short string representation of `self.full_string` for console output."""
-        return (
-            f"{self.action_reference.owner}/{self.action_reference.repo}@{self.sha[:8]}"
-        )
+        """A short string representation of `full_string` for console output.
+
+        The commit sha is truncated to 8 chars.
+        """
+        return f"{self.action_reference.full_string_without_ref}@{self.sha[:8]}"

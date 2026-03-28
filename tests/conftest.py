@@ -112,3 +112,20 @@ def mock_pinned_action_ref_python() -> HashPinnedActionReference:
         sha="def456abc123def456abc123def456abc123def456",
         comment="v5",
     )
+
+
+@pytest.fixture
+def mock_pinned_action_ref_enforcelabel() -> HashPinnedActionReference:
+    """Sample pinned reference for jupyterlab/maintainer-tools/.github/actions/enforce-label@v1."""
+    return HashPinnedActionReference(
+        action_reference=ActionReference(
+            owner="jupyterlab",
+            repo="maintainer-tools",
+            subpath="/.github/actions/enforce-label",
+            ref="v1",
+            line_number=8,
+            full_string="jupyterlab/maintainer-tools/.github/actions/enforce-label@v1",
+        ),
+        sha="123abc123abc123abc123abc123abc123abc123abc",
+        comment="v1",
+    )

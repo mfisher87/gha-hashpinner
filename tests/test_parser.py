@@ -9,6 +9,7 @@ import pytest
 
 from gha_hashpinner.parser import (
     _discover_workflow_files,
+    _parse_uses_str,
     _parse_workflow_file,
     find_all_mutable_action_references,
 )
@@ -17,10 +18,12 @@ from .mock_workflows import (
     COMPLEX_WORKFLOW,
     WORKFLOW_WITH_BORDERLINE_YAML,
     WORKFLOW_WITH_COMMENTS,
+    WORKFLOW_WITH_IMMUTABLE_PATH_PIN,
     WORKFLOW_WITH_IMMUTABLE_PINS,
     WORKFLOW_WITH_INVALID_YAML,
     WORKFLOW_WITH_LOCAL_AND_DOCKER_ACTIONS,
     WORKFLOW_WITH_MUTABLE_AND_IMMUTABLE_PINS,
+    WORKFLOW_WITH_MUTABLE_PATH_PIN,
     WORKFLOW_WITH_MUTABLE_PINS,
     WORKFLOW_WITH_NO_JOBS,
     WORKFLOW_WITH_QUOTED_MUTABLE_AND_IMMUTABLE_PINS,
@@ -38,44 +41,73 @@ class TestParseWorkflowFile:
                 WORKFLOW_WITH_MUTABLE_PINS,
                 2,
                 [
-                    ("actions", "checkout", "v4", "actions/checkout@v4", 8),
-                    ("actions", "setup-python", "v5", "actions/setup-python@v5", 9),
+                    ("actions", "checkout", None, "v4", "actions/checkout@v4", 8),
+                    (
+                        "actions",
+                        "setup-python",
+                        None,
+                        "v5",
+                        "actions/setup-python@v5",
+                        9,
+                    ),
                 ],
                 id="workflow-with-mutable-pins",
+            ),
+            pytest.param(
+                WORKFLOW_WITH_MUTABLE_PATH_PIN,
+                1,
+                [
+                    (
+                        "jupyterlab",
+                        "maintainer-tools",
+                        "/.github/actions/enforce-label",
+                        "v1",
+                        "jupyterlab/maintainer-tools/.github/actions/enforce-label@v1",
+                        7,
+                    )
+                ],
+                id="workflow-with-immutable-path-pin",
             ),
             pytest.param(
                 WORKFLOW_WITH_IMMUTABLE_PINS, 0, [], id="workflow-with-immutable-pins"
             ),
             pytest.param(
+                WORKFLOW_WITH_IMMUTABLE_PATH_PIN,
+                0,
+                [],
+                id="workflow-with-immutable-path-pin",
+            ),
+            pytest.param(
                 WORKFLOW_WITH_MUTABLE_AND_IMMUTABLE_PINS,
                 1,
-                [
-                    ("actions", "setup-python", "v5", "actions/setup-python@v5", 9),
-                ],
+                [("actions", "setup-python", None, "v5", "actions/setup-python@v5", 9)],
                 id="workflow-with-mutable-and-immutable-pins",
             ),
             pytest.param(
                 WORKFLOW_WITH_QUOTED_MUTABLE_AND_IMMUTABLE_PINS,
                 1,
-                [
-                    ("actions", "setup-python", "v5", "actions/setup-python@v5", 8),
-                ],
+                [("actions", "setup-python", None, "v5", "actions/setup-python@v5", 8)],
                 id="workflow-with-quoted-mutable-and-immutable-pins",
             ),
             pytest.param(
                 WORKFLOW_WITH_LOCAL_AND_DOCKER_ACTIONS,
                 1,
-                [
-                    ("actions", "checkout", "v4", "actions/checkout@v4", 9),
-                ],
+                [("actions", "checkout", None, "v4", "actions/checkout@v4", 9)],
                 id="workflow-with-local-and-docker-actions",
             ),
             pytest.param(
                 WORKFLOW_WITH_COMMENTS,
                 2,
                 [
-                    ("actions", "checkout", "v4", "actions/checkout@v4", 7),
-                    ("actions", "setup-python", "v5", "actions/setup-python@v5", 8),
+                    ("actions", "checkout", None, "v4", "actions/checkout@v4", 7),
+                    (
+                        "actions",
+                        "setup-python",
+                        None,
+                        "v5",
+                        "actions/setup-python@v5",
+                        8,
+                    ),
                 ],
                 id="workflow-with-comments",
             ),
@@ -83,17 +115,18 @@ class TestParseWorkflowFile:
                 COMPLEX_WORKFLOW,
                 5,
                 [
-                    ("actions", "checkout", "v4", "actions/checkout@v4", 9),
-                    ("actions", "setup-node", "v3", "actions/setup-node@v3", 12),
-                    ("actions", "checkout", "v4", "actions/checkout@v4", 20),
+                    ("actions", "checkout", None, "v4", "actions/checkout@v4", 9),
+                    ("actions", "setup-node", None, "v3", "actions/setup-node@v3", 12),
+                    ("actions", "checkout", None, "v4", "actions/checkout@v4", 20),
                     (
                         "codecov",
                         "codecov-action",
+                        None,
                         "v3",
                         "codecov/codecov-action@v3",
                         22,
                     ),
-                    ("actions", "deploy", "main", "actions/deploy@main", 28),
+                    ("actions", "deploy", None, "main", "actions/deploy@main", 28),
                 ],
                 id="complex-workflow",
             ),
@@ -105,18 +138,19 @@ class TestParseWorkflowFile:
         make_workflow_file: MakeWorkflowFileFunc,
         workflow_content: str,
         expected_workflow_count: int,
-        expected_actions: list[tuple[str, str, str, str, int]],
+        expected_actions: list[tuple[str, str, str | None, str, str, int]],
     ) -> None:
         """Test each mock workflow is parsed as expected."""
         workflow_file = make_workflow_file(content=workflow_content)
         refs = _parse_workflow_file(workflow_file)
 
         assert len(refs) == expected_workflow_count
-        for index, (owner, repo, ref, full_string, line_number) in enumerate(
+        for index, (owner, repo, subpath, ref, full_string, line_number) in enumerate(
             expected_actions
         ):
             assert refs[index].owner == owner
             assert refs[index].repo == repo
+            assert refs[index].subpath == subpath
             assert refs[index].ref == ref
             assert refs[index].full_string == full_string
             assert refs[index].line_number == line_number
@@ -296,3 +330,23 @@ class TestFindAllActionReferences:
         """Should raise FileNotFoundError for nonexistent path."""
         with pytest.raises(FileNotFoundError):
             find_all_mutable_action_references(Path("/nonexistent/path"))
+
+
+class TestParseUsesStr:
+    """Test the _parse_uses_str function."""
+
+    @pytest.mark.parametrize(
+        "uses_str",
+        [
+            # "owner/repo",  # TODO: Currently unsupported
+            "owner/repo@v1",
+            "owner/repo/.github/actions/custom@v2",
+            "owner/repo/action@some-branch",
+            "owner/repo/path/to/custom/action@v1.2.3",
+        ],
+    )
+    def test_parse_uses_str(self, uses_str: str) -> None:
+        """Should parse without error."""
+        action_ref = _parse_uses_str(uses_str, line_no=1)
+        assert action_ref is not None
+        assert action_ref.full_string == uses_str

@@ -14,6 +14,16 @@ WORKFLOW_WITH_MUTABLE_PINS = dedent("""
                 - uses: "actions/setup-python@v5"
 """).strip()
 
+WORKFLOW_WITH_MUTABLE_PATH_PIN = dedent("""
+    name: "Test"
+    on: push
+    jobs:
+        test:
+            runs_on: ubuntu-latest
+            steps:
+                - uses: "jupyterlab/maintainer-tools/.github/actions/enforce-label@v1"
+""").strip()
+
 WORKFLOW_WITH_IMMUTABLE_PINS = dedent("""
     name: "Test"
     on: push
@@ -24,6 +34,16 @@ WORKFLOW_WITH_IMMUTABLE_PINS = dedent("""
                 # One quoted, one not
                 - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v4
                 - uses: "actions/setup-python@deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"  #v5
+""").strip()
+
+WORKFLOW_WITH_IMMUTABLE_PATH_PIN = dedent("""
+    name: "Test"
+    on: push
+    jobs:
+        test:
+            runs_on: ubuntu-latest
+            steps:
+                - uses: "jupyterlab/maintainer-tools/.github/actions/enforce-label@deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"  # v1
 """).strip()
 
 

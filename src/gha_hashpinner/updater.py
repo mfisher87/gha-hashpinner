@@ -1,9 +1,9 @@
 """Modifies workflow files to replace mutable pins with immutable ones."""
 
-import re
 from pathlib import Path
 
 from gha_hashpinner.models import HashPinnedActionReference
+from gha_hashpinner.regex import action_updater_regex
 
 
 def update_workflow_file(
@@ -59,18 +59,7 @@ def _replace_action_in_line(
         ValueError: When regex matching fails to parse the file content
 
     """
-    mutable = ref.action_reference
-
-    # TODO: Import!
-    pattern = re.compile(
-        r"(\s*-?\s*uses:\s*)"  # Group 1: The key, with leading and trailing whitespace
-        r"([\"']?)"  # Group 2: Optional opening quote
-        + re.escape(mutable.full_string)  # The original ref string
-        + r"([\"']?)"  # Group 3: Optional closing quote
-        r"[ \t]*"  # Trailing whitespace after ref
-        r"#*[^\r\n]*"  # Optional comment
-        r"(\r?\n?)$"  # Group 4: Line ending
-    )
+    pattern = action_updater_regex(ref.action_reference)
 
     match = pattern.match(line)
     if match is None:

@@ -118,6 +118,7 @@ def _parse_uses_str(action_uses_str: str, *, line_no: int) -> ActionReference | 
     action_ref = ActionReference(
         owner=action_match.group("owner"),
         repo=action_match.group("repo"),
+        subpath=action_match.group("subpath"),
         ref=action_match.group("ref"),
         line_number=line_no,
         full_string=action_uses_str,
