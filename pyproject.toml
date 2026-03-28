@@ -24,7 +24,7 @@ keywords = [
 ]
 dynamic = ["version"]
 dependencies = [
-    "pygithub>=2.9.0",
+    "pygithub>=2.8.1",
     "pyyaml>=6.0.3",
     "rich>=14.3.3",
     "typer>=0.24.1",
@@ -61,6 +61,12 @@ exclude = [".github"]
 
 [tool.hatch.build.hooks.version]
 path = "src/gha_hashpinner/_version.py"
+
+
+[tool.uv]
+# "Dependency cooldown" to help prevent supply chain attacks
+#    See: https://blog.yossarian.net/2025/11/21/We-should-all-be-using-dependency-cooldowns
+exclude-newer = "7 days"
 
 
 [tool.mypy]
