@@ -1,0 +1,10 @@
+- id: "gha-hashpinner-check"
+  name: "Execute `gha-hashpinner --check`"
+  description: |-
+   This hook checks for the existence of mutable pins in GitHub Actions config files.
+  entry: "gha-hashpinner --check"
+  language: "python"
+  types: ["text"]
+  files: "\\.github\\/workflows\\/.*\\.ya?ml"
+  stages: [pre-commit, pre-merge-commit, manual]
+  pass_filenames: false
