@@ -57,6 +57,16 @@ gha-hashpinner .github/workflows/my-workflow.yml
 ```
 
 
+### With GitHub Actions
+
+TODO
+
+
+### With [pre-commit](pre-commit.com) / [prek](https://prek.j178.dev/)
+
+TODO
+
+
 ## Alternatives
 
 * <https://github.com/azat-io/actions-up>: NPM package
