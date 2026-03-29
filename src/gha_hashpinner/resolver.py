@@ -8,8 +8,8 @@ from gha_hashpinner.models import ImmutableAction, MutableAction
 type GhResolutionCache = dict[tuple[str, str, str], str]
 
 
-def resolve_action_references(
-    action_refs: list[MutableAction],
+def resolve_mutable_actions(
+    mutable_actions: list[MutableAction],
     *,
     token: str | None = None,
 ) -> list[ImmutableAction]:
@@ -18,30 +18,30 @@ def resolve_action_references(
     Actions that fail to resolve are skipped.
 
     Args:
-        action_refs: List of mutable `MutableAction`s to resolve
+        mutable_actions: List of mutable `MutableAction`s to resolve
         token: Optional GitHub token for API access (recommended to avoid rate limits)
 
     Returns:
-        List of resolved `ImmutableAction`s (n <= `len(action_refs)`)
+        List of resolved `ImmutableAction`s (n <= `len(mutable_actions)`)
 
     """
     gh = Github(token) if token else Github()
     gh_resolution_cache: GhResolutionCache = {}
 
     resolved: list[ImmutableAction] = []
-    for action_ref in action_refs:
+    for mutable_action in mutable_actions:
         sha = _resolve_ref_to_commit_sha(
             gh=gh,
-            owner=action_ref.owner,
-            repo=action_ref.repo,
-            ref=action_ref.ref,
+            owner=mutable_action.owner,
+            repo=mutable_action.repo,
+            ref=mutable_action.ref,
             cache=gh_resolution_cache,
         )
         resolved.append(
             ImmutableAction(
-                mutable_origin=action_ref,
+                mutable_origin=mutable_action,
                 sha=sha,
-                comment=action_ref.ref,
+                comment=mutable_action.ref,
             )
         )
 
@@ -56,7 +56,7 @@ def _resolve_ref_to_commit_sha(
     ref: str,
     cache: GhResolutionCache | None = None,
 ) -> str:
-    """Look up a mutable ref in GitHub and return a corresponding immutable ref.
+    """Look up a mutable Git ref in GitHub and return a corresponding immutable ref.
 
     Caches results on `(owner, repo, ref)` to limit GH API calls and make best effort to
     avoid rate limiting.
@@ -65,7 +65,7 @@ def _resolve_ref_to_commit_sha(
         gh: An instance of a `pygithub.Github` client
         owner: Repository owner
         repo: Repository name
-        ref: Mutable ref
+        ref: Mutable Git ref
         cache: A cache to use to limit GH API usage
 
     Returns:
@@ -74,7 +74,7 @@ def _resolve_ref_to_commit_sha(
     Raises:
         UnknownObjectException: Repo doesn't exist or is inaccessible
         GitHubException: API error, e.g. rate limit
-        ValueError: The provided ref wasn't found as a tag or branch
+        ValueError: The provided Git ref wasn't found as a tag or branch
 
     """
     if cache is not None:
@@ -95,15 +95,15 @@ def _resolve_ref_to_commit_sha(
             cache[cache_key] = sha
         return sha
 
-    raise ValueError(f"The ref '{ref}' was not found on GitHub as a tag or branch.")
+    raise ValueError(f"The Git ref '{ref}' was not found on GitHub as a tag or branch.")
 
 
 def _resolve_branch(*, repo: Repository, branch_name: str) -> str | None:
-    """Attempt to resolve a ref as a branch.
+    """Attempt to resolve a Git ref as a branch.
 
     Args:
         repo: GitHub repository object
-        branch_name: A ref that will be treated as a branch name
+        branch_name: A Git ref that will be treated as a branch name
 
     Returns:
         Corresponding commit SHA if branch exists, otherwise None
@@ -116,11 +116,11 @@ def _resolve_branch(*, repo: Repository, branch_name: str) -> str | None:
 
 
 def _resolve_tag(*, repo: Repository, tag_name: str) -> str | None:
-    """Attempt to resolve a ref as a tag.
+    """Attempt to resolve a Git ref as a tag.
 
     Args:
         repo: GitHub repository object
-        tag_name: A ref that will be treated as a tag name
+        tag_name: A Git ref that will be treated as a tag name
 
     Returns:
         Corresponding commit SHA if tag exists, otherwise None

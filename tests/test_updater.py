@@ -57,7 +57,7 @@ class TestReplaceActionInLine:
     )
     def test_replace(
         self,
-        mock_pinned_action_ref_checkout: ImmutableAction,
+        mock_immutable_action_checkout: ImmutableAction,
         line: str,
         expected: str,
     ) -> None:
@@ -66,7 +66,10 @@ class TestReplaceActionInLine:
         Comments should be replaced. Formatting (i.e. indentation and leading spaces)
         should be unaltered.
         """
-        actual = _replace_action_in_line(line, ref=mock_pinned_action_ref_checkout)
+        actual = _replace_action_in_line(
+            line,
+            immutable_action=mock_immutable_action_checkout,
+        )
         assert actual == expected
 
     @pytest.mark.parametrize(
@@ -80,12 +83,15 @@ class TestReplaceActionInLine:
     )
     def test_replace_with_subpath(
         self,
-        mock_pinned_action_ref_enforcelabel: ImmutableAction,
+        mock_immutable_action_enforcelabel: ImmutableAction,
         line: str,
         expected: str,
     ) -> None:
         """Should successfully replace mutable pins for actions with subpaths."""
-        actual = _replace_action_in_line(line, ref=mock_pinned_action_ref_enforcelabel)
+        actual = _replace_action_in_line(
+            line,
+            immutable_action=mock_immutable_action_enforcelabel,
+        )
         assert actual == expected
 
 
@@ -95,9 +101,9 @@ class TestUpdateWorkflowFile:
     def test_update_single_action(
         self,
         make_workflow_file: MakeWorkflowFileFunc,
-        mock_pinned_action_ref_checkout: ImmutableAction,
+        mock_immutable_action_checkout: ImmutableAction,
     ) -> None:
-        """Should update a single action reference."""
+        """Should update a single action specifier."""
         content = dedent("""
             name: Test
             on: push
@@ -111,7 +117,10 @@ class TestUpdateWorkflowFile:
         """).strip()
 
         workflow = make_workflow_file(content=content)
-        update_workflow_file(workflow, refs=[mock_pinned_action_ref_checkout])
+        update_workflow_file(
+            workflow,
+            immutable_actions=[mock_immutable_action_checkout],
+        )
 
         actual = workflow.read_text()
         expected = dedent("""
@@ -131,10 +140,10 @@ class TestUpdateWorkflowFile:
     def test_update_multiple_actions(
         self,
         make_workflow_file: MakeWorkflowFileFunc,
-        mock_pinned_action_ref_checkout: ImmutableAction,
-        mock_pinned_action_ref_python: ImmutableAction,
+        mock_immutable_action_checkout: ImmutableAction,
+        mock_immutable_action_python: ImmutableAction,
     ) -> None:
-        """Should update multiple action references."""
+        """Should update multiple action specifiers."""
         content = dedent("""
             name: Test
             on: push
@@ -151,7 +160,10 @@ class TestUpdateWorkflowFile:
         workflow = make_workflow_file(content=content)
         update_workflow_file(
             workflow,
-            refs=[mock_pinned_action_ref_checkout, mock_pinned_action_ref_python],
+            immutable_actions=[
+                mock_immutable_action_checkout,
+                mock_immutable_action_python,
+            ],
         )
 
         actual = workflow.read_text()
@@ -169,11 +181,11 @@ class TestUpdateWorkflowFile:
         """).strip()
         assert actual == expected
 
-    def test_update_with_empty_refs_list(
+    def test_update_with_empty_specifiers_list(
         self,
         make_workflow_file: MakeWorkflowFileFunc,
     ) -> None:
-        """Should not modify file when refs list is empty."""
+        """Should not modify file when immutable action specifiers list is empty."""
         content = dedent("""
             name: Test
             on: push
@@ -186,17 +198,17 @@ class TestUpdateWorkflowFile:
         workflow = make_workflow_file(content=content)
         original_content = workflow.read_text()
 
-        update_workflow_file(workflow, refs=[])
+        update_workflow_file(workflow, immutable_actions=[])
 
         assert workflow.read_text() == original_content
 
     def test_update_with_quoted_actions(
         self,
         make_workflow_file: MakeWorkflowFileFunc,
-        mock_pinned_action_ref_checkout: ImmutableAction,
-        mock_pinned_action_ref_python: ImmutableAction,
+        mock_immutable_action_checkout: ImmutableAction,
+        mock_immutable_action_python: ImmutableAction,
     ) -> None:
-        """Should handle differently-quoted action references."""
+        """Should handle differently-quoted action specifiers."""
         content = dedent("""
             name: Test
             jobs:
@@ -205,17 +217,17 @@ class TestUpdateWorkflowFile:
                   - uses: "actions/checkout@v4"
                   - uses: 'actions/setup-python@v5'
         """).strip()
-        mock_pinned_action_ref_checkout = replace(
-            mock_pinned_action_ref_checkout,
+        mock_immutable_action_checkout = replace(
+            mock_immutable_action_checkout,
             mutable_origin=replace(
-                mock_pinned_action_ref_checkout.mutable_origin,
+                mock_immutable_action_checkout.mutable_origin,
                 line_number=5,
             ),
         )
-        mock_pinned_action_ref_python = replace(
-            mock_pinned_action_ref_python,
+        mock_immutable_action_python = replace(
+            mock_immutable_action_python,
             mutable_origin=replace(
-                mock_pinned_action_ref_python.mutable_origin,
+                mock_immutable_action_python.mutable_origin,
                 line_number=6,
             ),
         )
@@ -224,7 +236,10 @@ class TestUpdateWorkflowFile:
 
         update_workflow_file(
             workflow,
-            refs=[mock_pinned_action_ref_checkout, mock_pinned_action_ref_python],
+            immutable_actions=[
+                mock_immutable_action_checkout,
+                mock_immutable_action_python,
+            ],
         )
 
         actual = workflow.read_text()
@@ -242,7 +257,7 @@ class TestUpdateWorkflowFile:
     def test_update_preserves_file_structure(
         self,
         make_workflow_file: MakeWorkflowFileFunc,
-        mock_pinned_action_ref_checkout: ImmutableAction,
+        mock_immutable_action_checkout: ImmutableAction,
     ) -> None:
         """Should preserve blank lines and overall file structure."""
         content = dedent("""
@@ -258,10 +273,10 @@ class TestUpdateWorkflowFile:
 
                   - run: echo "test"
         """).strip()
-        mock_pinned_action_ref_checkout = replace(
-            mock_pinned_action_ref_checkout,
+        mock_immutable_action_checkout = replace(
+            mock_immutable_action_checkout,
             mutable_origin=replace(
-                mock_pinned_action_ref_checkout.mutable_origin,
+                mock_immutable_action_checkout.mutable_origin,
                 line_number=9,
             ),
         )
@@ -269,7 +284,10 @@ class TestUpdateWorkflowFile:
         workflow = make_workflow_file(content=content)
         original_lines = content.splitlines(keepends=True)
 
-        update_workflow_file(workflow, refs=[mock_pinned_action_ref_checkout])
+        update_workflow_file(
+            workflow,
+            immutable_actions=[mock_immutable_action_checkout],
+        )
 
         actual = workflow.read_text()
         actual_lines = actual.splitlines(keepends=True)
@@ -293,8 +311,8 @@ class TestUpdateWorkflowFile:
     def test_update_multiple_actions_same_workflow(
         self,
         make_workflow_file: MakeWorkflowFileFunc,
-        mock_pinned_action_ref_checkout: ImmutableAction,
-        mock_pinned_action_ref_python: ImmutableAction,
+        mock_immutable_action_checkout: ImmutableAction,
+        mock_immutable_action_python: ImmutableAction,
     ) -> None:
         """Should handle multiple different actions in same workflow."""
         content = dedent("""
@@ -309,31 +327,31 @@ class TestUpdateWorkflowFile:
                   - uses: actions/checkout@v4
                   - uses: actions/setup-python@v5
         """).strip()
-        ref1 = replace(
-            mock_pinned_action_ref_checkout,
+        spec1 = replace(
+            mock_immutable_action_checkout,
             mutable_origin=replace(
-                mock_pinned_action_ref_checkout.mutable_origin,
+                mock_immutable_action_checkout.mutable_origin,
                 line_number=5,
             ),
         )
-        ref2 = replace(
-            mock_pinned_action_ref_python,
+        spec2 = replace(
+            mock_immutable_action_python,
             mutable_origin=replace(
-                mock_pinned_action_ref_python.mutable_origin,
+                mock_immutable_action_python.mutable_origin,
                 line_number=6,
             ),
         )
-        ref3 = replace(
-            mock_pinned_action_ref_checkout,
+        spec3 = replace(
+            mock_immutable_action_checkout,
             mutable_origin=replace(
-                mock_pinned_action_ref_checkout.mutable_origin,
+                mock_immutable_action_checkout.mutable_origin,
                 line_number=9,
             ),
         )
-        ref4 = replace(
-            mock_pinned_action_ref_python,
+        spec4 = replace(
+            mock_immutable_action_python,
             mutable_origin=replace(
-                mock_pinned_action_ref_python.mutable_origin,
+                mock_immutable_action_python.mutable_origin,
                 line_number=10,
             ),
         )
@@ -342,7 +360,7 @@ class TestUpdateWorkflowFile:
 
         update_workflow_file(
             workflow,
-            refs=[ref1, ref2, ref3, ref4],
+            immutable_actions=[spec1, spec2, spec3, spec4],
         )
 
         actual = workflow.read_text()
@@ -364,7 +382,7 @@ class TestUpdateWorkflowFile:
     def test_update_replaces_existing_comments(
         self,
         make_workflow_file: MakeWorkflowFileFunc,
-        mock_pinned_action_ref_checkout: ImmutableAction,
+        mock_immutable_action_checkout: ImmutableAction,
     ) -> None:
         """Should replace existing comments with version comment."""
         content = dedent("""
@@ -375,16 +393,19 @@ class TestUpdateWorkflowFile:
                   - name: "Checkout"
                     uses: actions/checkout@v4  # Get the code
         """).strip()
-        mock_pinned_action_ref_checkout = replace(
-            mock_pinned_action_ref_checkout,
+        mock_immutable_action_checkout = replace(
+            mock_immutable_action_checkout,
             mutable_origin=replace(
-                mock_pinned_action_ref_checkout.mutable_origin,
+                mock_immutable_action_checkout.mutable_origin,
                 line_number=6,
             ),
         )
 
         workflow = make_workflow_file(content=content)
-        update_workflow_file(workflow, refs=[mock_pinned_action_ref_checkout])
+        update_workflow_file(
+            workflow,
+            immutable_actions=[mock_immutable_action_checkout],
+        )
 
         actual = workflow.read_text()
         expected = dedent("""

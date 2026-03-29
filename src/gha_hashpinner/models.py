@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, kw_only=True)
 class MutableAction:
-    """A GitHub Action reference (value of a `uses: ...` key) in a workflow."""
+    """A GitHub Action specifier (value of a `uses: ...` key) in a workflow."""
 
     owner: str
     repo: str
@@ -19,7 +19,7 @@ class MutableAction:
 
     @property
     def full_string_without_ref(self) -> str:
-        """Full action reference string without ref."""
+        """Full action specifier string without ref."""
         string = f"{self.owner}/{self.repo}"
         if self.subpath:
             string += self.subpath
@@ -47,7 +47,7 @@ class ImmutableAction:
 
     @property
     def full_string(self) -> str:
-        """Generate a full immutable action reference string.
+        """Generate a full immutable action specifier string.
 
         Does not include a comment, this is just the value for the `uses:` key.
         """

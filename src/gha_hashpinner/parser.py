@@ -1,4 +1,4 @@
-"""Functions for parsing mutable action references from workflow files."""
+"""Functions for parsing mutable action specifiers from workflow files."""
 
 from pathlib import Path
 
@@ -9,8 +9,8 @@ from gha_hashpinner.models import MutableAction
 from gha_hashpinner.regex import ACTION_PATTERN, SHA_PATTERN, USES_PATTERN
 
 
-def find_all_mutable_action_references(path: Path) -> dict[Path, list[MutableAction]]:
-    """Find all mutable action references in workflow file(s).
+def find_all_mutable_actions(path: Path) -> dict[Path, list[MutableAction]]:
+    """Find all mutable action specifiers in workflow file(s).
 
     Args:
         path: A directory containing `.github/workflows/` or a single workflow file
@@ -32,7 +32,7 @@ def find_all_mutable_action_references(path: Path) -> dict[Path, list[MutableAct
 
 
 def _parse_workflow_file(workflow_path: Path) -> list[MutableAction]:
-    """Parse a workflow file and extract action references with mutable pins.
+    """Parse a workflow file and extract action specifiers with mutable pins.
 
     Args:
         workflow_path: Path to a workflow YAML file
@@ -46,7 +46,7 @@ def _parse_workflow_file(workflow_path: Path) -> list[MutableAction]:
     content = workflow_path.read_text()
     _validate_yaml(content=content, path=workflow_path)
 
-    action_refs: list[MutableAction] = []
+    actions: list[MutableAction] = []
     lines = content.splitlines()
 
     for line_no, line in enumerate(lines, start=1):
@@ -60,13 +60,13 @@ def _parse_workflow_file(workflow_path: Path) -> list[MutableAction]:
 
         action_uses_str = match.group(1).strip()
 
-        action_ref = _parse_uses_str(action_uses_str, line_no=line_no)
-        if action_ref is None:
+        action = _parse_uses_str(action_uses_str, line_no=line_no)
+        if action is None:
             continue
 
-        action_refs.append(action_ref)
+        actions.append(action)
 
-    return action_refs
+    return actions
 
 
 # TODO: Support multi-line values if they are present for whatever reason...
@@ -79,7 +79,7 @@ def _parse_uses_str(action_uses_str: str, *, line_no: int) -> MutableAction | No
         line_no: The line number the `uses:` value was found on
 
     Returns:
-        `None` if no mutable ref found, otherwise a mutable `MutableAction`
+        `None` if no mutable action specifier found, otherwise a `MutableAction`
 
     """
     # TODO: We're already eliminating these with the regex below, right?
@@ -92,7 +92,7 @@ def _parse_uses_str(action_uses_str: str, *, line_no: int) -> MutableAction | No
         # TODO: Warn
         return None
 
-    action_ref = MutableAction(
+    action = MutableAction(
         owner=action_match.group("owner"),
         repo=action_match.group("repo"),
         subpath=action_match.group("subpath"),
@@ -101,11 +101,11 @@ def _parse_uses_str(action_uses_str: str, *, line_no: int) -> MutableAction | No
         full_string=action_uses_str,
     )
 
-    if SHA_PATTERN.match(action_ref.ref):
+    if SHA_PATTERN.match(action.ref):
         # TODO: debug log
         return None
 
-    return action_ref
+    return action
 
 
 def _validate_yaml(*, content: str, path: Path) -> None:

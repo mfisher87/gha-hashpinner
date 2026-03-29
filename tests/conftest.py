@@ -59,8 +59,8 @@ def make_workflows_dir(tmp_path: Path) -> MakeWorkflowsDirFunc:
 
 
 @pytest.fixture
-def mock_action_ref_checkout() -> MutableAction:
-    """Mock action reference for 'actions/checkout@v4'."""
+def mock_mutable_action_checkout() -> MutableAction:
+    """Mock mutable action specifier for 'actions/checkout@v4'."""
     return MutableAction(
         owner="actions",
         repo="checkout",
@@ -71,8 +71,8 @@ def mock_action_ref_checkout() -> MutableAction:
 
 
 @pytest.fixture
-def mock_action_ref_python() -> MutableAction:
-    """Mock action reference for 'actions/setup-python@v5'."""
+def mock_mutable_action_python() -> MutableAction:
+    """Mock mutable action specifier for 'actions/setup-python@v5'."""
     return MutableAction(
         owner="actions",
         repo="setup-python",
@@ -83,8 +83,8 @@ def mock_action_ref_python() -> MutableAction:
 
 
 @pytest.fixture
-def mock_pinned_action_ref_checkout() -> ImmutableAction:
-    """Sample pinned reference for actions/checkout@v4."""
+def mock_immutable_action_checkout() -> ImmutableAction:
+    """Sample immutable action specifier for 'actions/checkout@v4'."""
     return ImmutableAction(
         mutable_origin=MutableAction(
             owner="actions",
@@ -99,8 +99,8 @@ def mock_pinned_action_ref_checkout() -> ImmutableAction:
 
 
 @pytest.fixture
-def mock_pinned_action_ref_python() -> ImmutableAction:
-    """Sample pinned reference for actions/setup-python@v5."""
+def mock_immutable_action_python() -> ImmutableAction:
+    """Sample immutable action specifier for 'actions/setup-python@v5'."""
     return ImmutableAction(
         mutable_origin=MutableAction(
             owner="actions",
@@ -115,8 +115,8 @@ def mock_pinned_action_ref_python() -> ImmutableAction:
 
 
 @pytest.fixture
-def mock_pinned_action_ref_enforcelabel() -> ImmutableAction:
-    """Sample pinned reference for jupyterlab/maintainer-tools/.github/actions/enforce-label@v1."""
+def mock_immutable_action_enforcelabel() -> ImmutableAction:
+    """Sample immutable action specifier for 'jupyterlab/maintainer-tools/.../enforce-label@v1'."""
     return ImmutableAction(
         mutable_origin=MutableAction(
             owner="jupyterlab",
