@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from gha_hashpinner.parser import (
-    _parse_uses_str,
+    _parse_action_specifier,
     _parse_workflow_file,
     find_all_mutable_actions,
 )
@@ -240,13 +240,20 @@ class TestFindAllMutableActions:
             find_all_mutable_actions(Path("/nonexistent/path"))
 
 
-class TestParseUsesStr:
-    """Test the _parse_uses_str function."""
+class TestParseActionSpecifier:
+    """Test the _parse_action_specifier function."""
 
     @pytest.mark.parametrize(
         "uses_str",
         [
-            # "owner/repo",  # TODO: Currently unsupported
+            pytest.param(
+                "owner/repo",
+                marks=[
+                    pytest.mark.xfail(
+                        reason="Specifiers with no pinunsupported (issue #7)",
+                    )
+                ],
+            ),
             "owner/repo@v1",
             "owner/repo/.github/actions/custom@v2",
             "owner/repo/action@some-branch",
@@ -255,6 +262,6 @@ class TestParseUsesStr:
     )
     def test_parse_uses_str(self, uses_str: str) -> None:
         """Should parse without error."""
-        action = _parse_uses_str(uses_str, line_no=1)
+        action = _parse_action_specifier(uses_str, line_no=1)
         assert action is not None
         assert action.full_string == uses_str
