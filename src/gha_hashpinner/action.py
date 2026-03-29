@@ -21,6 +21,21 @@ class MutableAction:
     #     jupyterlab/maintainer-tools/.github/actions/enforce-label@v1
     subpath: str | None = None
 
+    def __post_init__(self) -> None:
+        """Validate."""
+        if self.subpath and not self.subpath.startswith("/"):
+            raise ValueError(
+                f"subpath attribute must start with '/'. Received {self.subpath}"
+            )
+
+    @property
+    def full_string_without_ref(self) -> str:
+        """Full action specifier string without ref."""
+        string = f"{self.owner}/{self.repo}"
+        if self.subpath:
+            string += self.subpath
+        return string
+
     @classmethod
     def parse(cls, action_specifier: str, *, line_number: int) -> Self | None:
         """Parse a mutable action specifier into a `MutableAction`.
@@ -58,21 +73,6 @@ class MutableAction:
             line_number=line_number,
             full_string=action_specifier,
         )
-
-    @property
-    def full_string_without_ref(self) -> str:
-        """Full action specifier string without ref."""
-        string = f"{self.owner}/{self.repo}"
-        if self.subpath:
-            string += self.subpath
-        return string
-
-    def __post_init__(self) -> None:
-        """Validate."""
-        if self.subpath and not self.subpath.startswith("/"):
-            raise ValueError(
-                f"subpath attribute must start with '/'. Received {self.subpath}"
-            )
 
 
 @dataclass(frozen=True, kw_only=True)
