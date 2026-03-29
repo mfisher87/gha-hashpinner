@@ -4,6 +4,7 @@ from pathlib import Path
 
 import yaml
 
+from gha_hashpinner.discoverer import discover_workflow_files 
 from gha_hashpinner.models import ActionReference
 from gha_hashpinner.regex import ACTION_PATTERN, SHA_PATTERN, USES_PATTERN
 
@@ -24,34 +25,10 @@ def find_all_mutable_action_references(path: Path) -> dict[Path, list[ActionRefe
     if path.is_dir():
         return {
             workflow_file: _parse_workflow_file(workflow_file)
-            for workflow_file in _discover_workflow_files(path)
+            for workflow_file in discover_workflow_files(path)
         }
 
     raise FileNotFoundError(f"Path '{path}' is not a file or directory.")
-
-
-def _discover_workflow_files(directory: Path) -> list[Path]:
-    """Find all workflow files in `{directory}/.github/workflows/`.
-
-    Matches `.yaml` or `.yml` files.
-
-    Args:
-        directory: Root directory to search
-
-    Returns:
-        List of `Path`s to workflow files
-
-    """
-    workflows_dir = directory / ".github" / "workflows"
-
-    if not (workflows_dir.exists() and workflows_dir.is_dir()):
-        raise FileNotFoundError(f"No workflows directory found at {workflows_dir}")
-
-    workflow_files: list[Path] = []
-    for pattern in ("*.yml", "*.yaml"):
-        workflow_files.extend(workflows_dir.glob(pattern))
-
-    return sorted(workflow_files)
 
 
 def _parse_workflow_file(workflow_path: Path) -> list[ActionReference]:
