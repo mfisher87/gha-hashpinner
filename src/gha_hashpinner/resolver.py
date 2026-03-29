@@ -3,32 +3,32 @@
 from github import Github, UnknownObjectException
 from github.Repository import Repository
 
-from gha_hashpinner.models import ActionReference, HashPinnedActionReference
+from gha_hashpinner.models import ImmutableAction, MutableAction
 
 type GhResolutionCache = dict[tuple[str, str, str], str]
 
 
 def resolve_action_references(
-    action_refs: list[ActionReference],
+    action_refs: list[MutableAction],
     *,
     token: str | None = None,
-) -> list[HashPinnedActionReference]:
-    """Resolve `ActionReference`s to `HashPinnedActionReference`s using GitHub API.
+) -> list[ImmutableAction]:
+    """Resolve `MutableAction`s to `ImmutableAction`s using GitHub API.
 
     Actions that fail to resolve are skipped.
 
     Args:
-        action_refs: List of mutable `ActionReference`s to resolve
+        action_refs: List of mutable `MutableAction`s to resolve
         token: Optional GitHub token for API access (recommended to avoid rate limits)
 
     Returns:
-        List of resolved `HashPinnedActionReference`s (n <= `len(action_refs)`)
+        List of resolved `ImmutableAction`s (n <= `len(action_refs)`)
 
     """
     gh = Github(token) if token else Github()
     gh_resolution_cache: GhResolutionCache = {}
 
-    resolved: list[HashPinnedActionReference] = []
+    resolved: list[ImmutableAction] = []
     for action_ref in action_refs:
         sha = _resolve_ref_to_commit_sha(
             gh=gh,
@@ -38,8 +38,8 @@ def resolve_action_references(
             cache=gh_resolution_cache,
         )
         resolved.append(
-            HashPinnedActionReference(
-                action_reference=action_ref,
+            ImmutableAction(
+                mutable_origin=action_ref,
                 sha=sha,
                 comment=action_ref.ref,
             )

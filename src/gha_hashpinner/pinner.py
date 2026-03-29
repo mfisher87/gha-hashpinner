@@ -7,7 +7,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from gha_hashpinner.exceptions import CheckFailedError
-from gha_hashpinner.models import ActionReference, HashPinnedActionReference
+from gha_hashpinner.models import ImmutableAction, MutableAction
 from gha_hashpinner.parser import find_all_mutable_action_references
 from gha_hashpinner.resolver import resolve_action_references
 from gha_hashpinner.updater import update_workflow_file
@@ -76,7 +76,7 @@ def _print_header(*, path: Path, num_paths: int, num_refs: int) -> None:
 
 
 def _process_refs(
-    mutable_refs_by_file: dict[Path, list[ActionReference]],
+    mutable_refs_by_file: dict[Path, list[MutableAction]],
     *,
     dry_run: bool,
     token: str | None = None,
@@ -103,9 +103,9 @@ def _process_refs(
             update_workflow_file(workflow_file, refs=immutable_refs)
 
 
-def _print_change(immutable_ref: HashPinnedActionReference) -> None:
+def _print_change(immutable_ref: ImmutableAction) -> None:
     """Print a summary of an individual ref transformation."""
-    mutable = immutable_ref.action_reference
+    mutable = immutable_ref.mutable_origin
 
     console.print(
         f"  [green]✓ Line {mutable.line_number:5d}:"

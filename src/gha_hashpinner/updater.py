@@ -2,14 +2,14 @@
 
 from pathlib import Path
 
-from gha_hashpinner.models import HashPinnedActionReference
+from gha_hashpinner.models import ImmutableAction
 from gha_hashpinner.regex import action_updater_regex
 
 
 def update_workflow_file(
     workflow_file: Path,
     *,
-    refs: list[HashPinnedActionReference],
+    refs: list[ImmutableAction],
 ) -> None:
     """Change each ref in `workflow_file` from a mutable ref to an immutable ref.
 
@@ -28,7 +28,7 @@ def update_workflow_file(
     lines = content.splitlines(keepends=True)
 
     for ref in refs:
-        line_number = ref.action_reference.line_number
+        line_number = ref.mutable_origin.line_number
         lines[line_number - 1] = _replace_action_in_line(
             lines[line_number - 1],
             ref=ref,
@@ -40,7 +40,7 @@ def update_workflow_file(
 def _replace_action_in_line(
     line: str,
     *,
-    ref: HashPinnedActionReference,
+    ref: ImmutableAction,
 ) -> str:
     """Replace a single line's mutable action reference with an immutable one.
 
@@ -59,7 +59,7 @@ def _replace_action_in_line(
         ValueError: When regex matching fails to parse the file content
 
     """
-    pattern = action_updater_regex(ref.action_reference)
+    pattern = action_updater_regex(ref.mutable_origin)
 
     match = pattern.match(line)
     if match is None:

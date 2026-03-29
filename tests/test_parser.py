@@ -178,7 +178,7 @@ class TestParseWorkflowFile:
         assert refs == []
 
 
-class TestFindAllActionReferences:
+class TestFindAllMutableActions:
     """Test the high-level function that handles both files and directories."""
 
     def test_find_from_single_file(

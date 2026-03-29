@@ -2,7 +2,7 @@
 
 import re
 
-from gha_hashpinner.models import ActionReference
+from gha_hashpinner.models import MutableAction
 
 # Match a github-style action ref, but not local actions (`./<...>`) or docker actions
 # (`docker://<...>`)
@@ -31,7 +31,7 @@ USES_PATTERN = re.compile(r"uses:\s+[\"']?([^\"'#\s]+)")
 #                         r"^(\s*uses:\s+)([\"']?)" + re.escape(mutable.full_string) + r"([\"']?)(\s*#.*)?$"
 
 
-def action_updater_regex(mutable_ref: ActionReference) -> re.Pattern[str]:
+def action_updater_regex(mutable_ref: MutableAction) -> re.Pattern[str]:
     """Generate a regex to be used for updating a ref to make it immutable."""
     # TODO: Named groups
     return re.compile(

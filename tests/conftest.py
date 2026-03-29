@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from gha_hashpinner.models import ActionReference, HashPinnedActionReference
+from gha_hashpinner.models import ImmutableAction, MutableAction
 
 from .types import MakeWorkflowFileFunc, MakeWorkflowsDirFunc
 
@@ -59,9 +59,9 @@ def make_workflows_dir(tmp_path: Path) -> MakeWorkflowsDirFunc:
 
 
 @pytest.fixture
-def mock_action_ref_checkout() -> ActionReference:
+def mock_action_ref_checkout() -> MutableAction:
     """Mock action reference for 'actions/checkout@v4'."""
-    return ActionReference(
+    return MutableAction(
         owner="actions",
         repo="checkout",
         ref="v4",
@@ -71,9 +71,9 @@ def mock_action_ref_checkout() -> ActionReference:
 
 
 @pytest.fixture
-def mock_action_ref_python() -> ActionReference:
+def mock_action_ref_python() -> MutableAction:
     """Mock action reference for 'actions/setup-python@v5'."""
-    return ActionReference(
+    return MutableAction(
         owner="actions",
         repo="setup-python",
         ref="v5",
@@ -83,10 +83,10 @@ def mock_action_ref_python() -> ActionReference:
 
 
 @pytest.fixture
-def mock_pinned_action_ref_checkout() -> HashPinnedActionReference:
+def mock_pinned_action_ref_checkout() -> ImmutableAction:
     """Sample pinned reference for actions/checkout@v4."""
-    return HashPinnedActionReference(
-        action_reference=ActionReference(
+    return ImmutableAction(
+        mutable_origin=MutableAction(
             owner="actions",
             repo="checkout",
             ref="v4",
@@ -99,10 +99,10 @@ def mock_pinned_action_ref_checkout() -> HashPinnedActionReference:
 
 
 @pytest.fixture
-def mock_pinned_action_ref_python() -> HashPinnedActionReference:
+def mock_pinned_action_ref_python() -> ImmutableAction:
     """Sample pinned reference for actions/setup-python@v5."""
-    return HashPinnedActionReference(
-        action_reference=ActionReference(
+    return ImmutableAction(
+        mutable_origin=MutableAction(
             owner="actions",
             repo="setup-python",
             ref="v5",
@@ -115,10 +115,10 @@ def mock_pinned_action_ref_python() -> HashPinnedActionReference:
 
 
 @pytest.fixture
-def mock_pinned_action_ref_enforcelabel() -> HashPinnedActionReference:
+def mock_pinned_action_ref_enforcelabel() -> ImmutableAction:
     """Sample pinned reference for jupyterlab/maintainer-tools/.github/actions/enforce-label@v1."""
-    return HashPinnedActionReference(
-        action_reference=ActionReference(
+    return ImmutableAction(
+        mutable_origin=MutableAction(
             owner="jupyterlab",
             repo="maintainer-tools",
             subpath="/.github/actions/enforce-label",
