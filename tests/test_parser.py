@@ -246,7 +246,14 @@ class TestParseActionSpecifier:
     @pytest.mark.parametrize(
         "uses_str",
         [
-            # "owner/repo",  # TODO: Currently unsupported
+            pytest.param(
+                "owner/repo",
+                marks=[
+                    pytest.mark.xfail(
+                        reason="Specifiers with no pinunsupported (issue #7)",
+                    )
+                ],
+            ),
             "owner/repo@v1",
             "owner/repo/.github/actions/custom@v2",
             "owner/repo/action@some-branch",
