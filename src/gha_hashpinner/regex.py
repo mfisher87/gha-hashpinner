@@ -15,20 +15,15 @@ ACTION_PATTERN = re.compile(
 
 # A Git commit sha is 40 hexadecimal characters
 SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
-# USES_PATTERN_KEY = r"^\s*uses:\s+"
-# USES_PATTERN_QUOTE = r"[\"']?"
-# USES_PATTERN_REF_CAPTURE = r"([^\"'#\s]+)"
-# USES_PATTERN = re.compile(
-#     USES_PATTERN_KEY
-#     + USES_PATTERN_QUOTE
-#     + USES_PATTERN_REF_CAPTURE
-# )
 
-USES_PATTERN = re.compile(r"uses:\s+[\"']?([^\"'#\s]+)")
+_USES_PATTERN_KEY = r"^\s*-?\s*uses:\s+"
+_USES_PATTERN_OPTIONAL_QUOTE = r"[\"']?"
+_USES_PATTERN_SPEC_CAPTURE = r"([^\"'#\s]+)"
 
-# USES_PATTERN = re.compile(r"^\s*uses:\s+[\"']?([^\"'#\s]+)")
-#                           key             qt          specifier                          qt       end
-#                         r"^(\s*uses:\s+)([\"']?)" + re.escape(mutable.full_string) + r"([\"']?)(\s*#.*)?$"
+# Extract the action specifier from a line containing a "uses: ..." key
+USES_PATTERN = re.compile(
+    _USES_PATTERN_KEY + _USES_PATTERN_OPTIONAL_QUOTE + _USES_PATTERN_SPEC_CAPTURE
+)
 
 
 def action_updater_regex(mutable_action: MutableAction) -> re.Pattern[str]:
