@@ -6,9 +6,9 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from gha_hashpinner.action import ImmutableAction
 from gha_hashpinner.discoverer import scan_path
 from gha_hashpinner.exceptions import CheckFailedError, NoWorkflowsFoundError
-from gha_hashpinner.models import ImmutableAction
 from gha_hashpinner.resolver import resolve_mutable_actions
 from gha_hashpinner.workflow import WorkflowFile
 

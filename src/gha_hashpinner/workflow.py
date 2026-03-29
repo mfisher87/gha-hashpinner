@@ -6,9 +6,9 @@ from pathlib import Path
 
 import yaml
 
-from gha_hashpinner.models import ImmutableAction, MutableAction
-from gha_hashpinner.parser import parse_action_specifier
-from gha_hashpinner.regex import USES_PATTERN, action_updater_regex
+from gha_hashpinner.action import ImmutableAction, MutableAction
+from gha_hashpinner.regex.updater import action_updater_regex
+from gha_hashpinner.regex.uses import USES_PATTERN
 
 
 @dataclass
@@ -48,7 +48,7 @@ class WorkflowFile:
                 continue
 
             action_specifier = match.group("action_spec").strip()
-            action = parse_action_specifier(action_specifier, line_number=line_number)
+            action = MutableAction.parse(action_specifier, line_number=line_number)
 
             if action is not None:
                 actions.append(action)

@@ -3,7 +3,7 @@
 from github import Github, UnknownObjectException
 from github.Repository import Repository
 
-from gha_hashpinner.models import ImmutableAction, MutableAction
+from gha_hashpinner.action import ImmutableAction, MutableAction
 
 type GhResolutionCache = dict[tuple[str, str, str], str]
 

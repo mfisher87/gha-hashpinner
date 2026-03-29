@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from gha_hashpinner.models import ImmutableAction, MutableAction
+from gha_hashpinner.action import ImmutableAction, MutableAction
 
 from .types import MakeWorkflowFileFunc, MakeWorkflowsDirFunc
 

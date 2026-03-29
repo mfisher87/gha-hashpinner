@@ -1,6 +1,10 @@
-"""Data models for this package."""
+"""Behaviors for interacting with individual action specifiers."""
 
 from dataclasses import dataclass
+from typing import Self
+
+from gha_hashpinner.regex.action import ACTION_PATTERN
+from gha_hashpinner.regex.sha import SHA_PATTERN
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -16,6 +20,44 @@ class MutableAction:
     # Some repos contain multiple actions, using a subpath to differentiate. E.g.:
     #     jupyterlab/maintainer-tools/.github/actions/enforce-label@v1
     subpath: str | None = None
+
+    @classmethod
+    def parse(cls, action_specifier: str, *, line_number: int) -> Self | None:
+        """Parse a mutable action specifier into a `MutableAction`.
+
+        Args:
+            action_specifier: A string value of a YAML `uses:` key from a GitHub Actions
+                workflow definition
+            line_number: The line number the `action_specifier` was found on
+
+        Returns:
+            A `MutableAction` if the action specifier is mutable, else `None`
+
+        """
+        # TODO: Make this a regular __init__ method?
+        # TODO: We're already eliminating these with the regex below, right?
+        if action_specifier.startswith(("./", "docker://")):
+            # TODO: Log (debug?)?
+            return None
+
+        match = ACTION_PATTERN.match(action_specifier)
+        if not match:
+            # TODO: Warn
+            return None
+
+        ref = match.group("ref")
+        if SHA_PATTERN.match(ref):
+            # The action is immutable
+            return None
+
+        return cls(
+            owner=match.group("owner"),
+            repo=match.group("repo"),
+            subpath=match.group("subpath"),
+            ref=ref,
+            line_number=line_number,
+            full_string=action_specifier,
+        )
 
     @property
     def full_string_without_ref(self) -> str:
