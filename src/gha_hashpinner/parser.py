@@ -58,7 +58,7 @@ def _parse_workflow_file(workflow_path: Path) -> list[MutableAction]:
             # TODO: Warn?
             continue
 
-        action_uses_str = match.group(1).strip()
+        action_uses_str = match.group("action_spec").strip()
 
         action = _parse_uses_str(action_uses_str, line_no=line_no)
         if action is None:

@@ -15,31 +15,25 @@ ACTION_PATTERN = re.compile(
 
 # A Git commit sha is 40 hexadecimal characters
 SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
-# USES_PATTERN_KEY = r"^\s*uses:\s+"
-# USES_PATTERN_QUOTE = r"[\"']?"
-# USES_PATTERN_REF_CAPTURE = r"([^\"'#\s]+)"
-# USES_PATTERN = re.compile(
-#     USES_PATTERN_KEY
-#     + USES_PATTERN_QUOTE
-#     + USES_PATTERN_REF_CAPTURE
-# )
 
-USES_PATTERN = re.compile(r"uses:\s+[\"']?([^\"'#\s]+)")
+_USES_PATTERN_KEY = r"^\s*-?\s*uses:\s+"  # with leading and trailing whitespace
+_USES_PATTERN_OPTIONAL_QUOTE = r"[\"']?"
+_USES_PATTERN_SPEC_CAPTURE = r"(?P<action_spec>[^\"'#\s]+)"
 
-# USES_PATTERN = re.compile(r"^\s*uses:\s+[\"']?([^\"'#\s]+)")
-#                           key             qt          specifier                          qt       end
-#                         r"^(\s*uses:\s+)([\"']?)" + re.escape(mutable.full_string) + r"([\"']?)(\s*#.*)?$"
+# Extract the action specifier from a line containing a "uses: ..." key
+USES_PATTERN = re.compile(
+    _USES_PATTERN_KEY + _USES_PATTERN_OPTIONAL_QUOTE + _USES_PATTERN_SPEC_CAPTURE
+)
 
 
 def action_updater_regex(mutable_action: MutableAction) -> re.Pattern[str]:
     """Generate a regex to be used for updating an action specifier to immutable."""
-    # TODO: Named groups
     return re.compile(
-        r"(\s*-?\s*uses:\s*)"  # Group 1: The key, with leading and trailing whitespace
-        r"([\"']?)"  # Group 2: Optional opening quote
+        rf"(?P<key>{_USES_PATTERN_KEY})"
+        rf"(?P<quote_open>{_USES_PATTERN_OPTIONAL_QUOTE})"
         + re.escape(mutable_action.full_string)  # The original action specifier string
-        + r"([\"']?)"  # Group 3: Optional closing quote
+        + rf"(?P<quote_close>{_USES_PATTERN_OPTIONAL_QUOTE})"
         r"[ \t]*"  # Trailing whitespace after specifier value
         r"#*[^\r\n]*"  # Optional comment
-        r"(\r?\n?)$"  # Group 4: Line ending
+        r"(?P<line_ending>\r?\n?)$"
     )
