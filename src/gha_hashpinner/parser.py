@@ -58,9 +58,9 @@ def _parse_workflow_file(workflow_path: Path) -> list[MutableAction]:
             # TODO: Warn?
             continue
 
-        action_uses_str = match.group("action_spec").strip()
+        action_specifier = match.group("action_spec").strip()
 
-        action = _parse_uses_str(action_uses_str, line_no=line_no)
+        action = _parse_action_specifier(action_specifier, line_no=line_no)
         if action is None:
             continue
 
@@ -70,24 +70,28 @@ def _parse_workflow_file(workflow_path: Path) -> list[MutableAction]:
 
 
 # TODO: Support multi-line values if they are present for whatever reason...
-def _parse_uses_str(action_uses_str: str, *, line_no: int) -> MutableAction | None:
-    """Parse a mutable `MutableAction` from the value of a `uses:` key.
+def _parse_action_specifier(
+    action_specifier: str,
+    *,
+    line_no: int,
+) -> MutableAction | None:
+    """Parse a `MutableAction` from a mutable action specifier.
 
     Args:
-        action_uses_str: A string value of a YAML `uses:` key from a GitHub Actions
+        action_specifier: A string value of a YAML `uses:` key from a GitHub Actions
             workflow definition
-        line_no: The line number the `uses:` value was found on
+        line_no: The line number the `action_specifier` was found on
 
     Returns:
         `None` if no mutable action specifier found, otherwise a `MutableAction`
 
     """
     # TODO: We're already eliminating these with the regex below, right?
-    if action_uses_str.startswith(("./", "docker://")):
+    if action_specifier.startswith(("./", "docker://")):
         # TODO: Log (debug?)?
         return None
 
-    action_match = ACTION_PATTERN.match(action_uses_str)
+    action_match = ACTION_PATTERN.match(action_specifier)
     if not action_match:
         # TODO: Warn
         return None
@@ -98,7 +102,7 @@ def _parse_uses_str(action_uses_str: str, *, line_no: int) -> MutableAction | No
         subpath=action_match.group("subpath"),
         ref=action_match.group("ref"),
         line_number=line_no,
-        full_string=action_uses_str,
+        full_string=action_specifier,
     )
 
     if SHA_PATTERN.match(action.ref):
