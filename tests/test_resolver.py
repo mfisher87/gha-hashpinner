@@ -5,10 +5,10 @@ from unittest.mock import Mock, patch
 import pytest
 from github import GithubException, UnknownObjectException
 
-from gha_hashpinner.models import ActionReference
+from gha_hashpinner.models import MutableAction
 from gha_hashpinner.resolver import (
     _resolve_ref_to_commit_sha,
-    resolve_action_references,
+    resolve_mutable_actions,
 )
 
 from .helpers import make_repo_mock
@@ -16,38 +16,38 @@ from .helpers import make_repo_mock
 patch_gh_client = patch("gha_hashpinner.resolver.Github")
 
 
-class TestResolveActionReferences:
-    """Test the main resolve_action_references function."""
+class TestResolveMutableActions:
+    """Test the main resolve_mutable_actions function."""
 
     @patch_gh_client
     def test_resolve_single_action(
         self,
         mock_gh_cls: Mock,
-        mock_action_ref_checkout: ActionReference,
+        mock_mutable_action_checkout: MutableAction,
     ) -> None:
-        """Should resolve a single action reference."""
+        """Should resolve a single action specifier."""
         sha = "abc123def456abc123def456abc123def456abc1"
         mock_repo = make_repo_mock(branch_sha=sha)
         mock_gh_cls.return_value.get_repo.return_value = mock_repo
 
-        results = resolve_action_references(
-            [mock_action_ref_checkout],
+        results = resolve_mutable_actions(
+            [mock_mutable_action_checkout],
             token="fake-token",
         )
 
         assert len(results) == 1
         assert results[0].sha == sha
-        assert results[0].comment == mock_action_ref_checkout.ref
-        assert results[0].action_reference == mock_action_ref_checkout
+        assert results[0].comment == mock_mutable_action_checkout.ref
+        assert results[0].mutable_origin == mock_mutable_action_checkout
 
     @patch_gh_client
     def test_resolve_multiple_actions(
         self,
         mock_gh_cls: Mock,
-        mock_action_ref_checkout: ActionReference,
-        mock_action_ref_python: ActionReference,
+        mock_mutable_action_checkout: MutableAction,
+        mock_mutable_action_python: MutableAction,
     ) -> None:
-        """Should resolve multiple action references."""
+        """Should resolve multiple action specifier."""
         sha1 = "sha1111111111111111111111111111111111111111"
         sha2 = "sha2222222222222222222222222222222222222222"
         mock_repo1 = make_repo_mock(branch_sha=sha1)
@@ -56,23 +56,23 @@ class TestResolveActionReferences:
         # FIXME: Shouldn't this be .return_value?
         mock_gh_cls.return_value.get_repo.side_effect = [mock_repo1, mock_repo2]
 
-        results = resolve_action_references(
-            [mock_action_ref_checkout, mock_action_ref_python],
+        results = resolve_mutable_actions(
+            [mock_mutable_action_checkout, mock_mutable_action_python],
             token="fake-token",
         )
 
         # Assert
         assert len(results) == 2
         assert results[0].sha == sha1
-        assert results[0].action_reference == mock_action_ref_checkout
+        assert results[0].mutable_origin == mock_mutable_action_checkout
         assert results[1].sha == sha2
-        assert results[1].action_reference == mock_action_ref_python
+        assert results[1].mutable_origin == mock_mutable_action_python
 
     @patch_gh_client
     def test_resolve_with_cache(
         self,
         mock_gh_cls: Mock,
-        mock_action_ref_checkout: ActionReference,
+        mock_mutable_action_checkout: MutableAction,
     ) -> None:
         """Should cache duplicate repo/ref combinations."""
         sha = "cached123456789012345678901234567890123456"
@@ -80,8 +80,8 @@ class TestResolveActionReferences:
         mock_gh_instance = mock_gh_cls.return_value
         mock_gh_instance.get_repo.return_value = mock_repo
 
-        results = resolve_action_references(
-            [mock_action_ref_checkout, mock_action_ref_checkout],
+        results = resolve_mutable_actions(
+            [mock_mutable_action_checkout, mock_mutable_action_checkout],
             token="fake-token",
         )
 
@@ -92,8 +92,8 @@ class TestResolveActionReferences:
     def test_resolve_skips_failures(
         self,
         mock_gh_cls: Mock,
-        mock_action_ref_checkout: ActionReference,
-        mock_action_ref_python: ActionReference,
+        mock_mutable_action_checkout: MutableAction,
+        mock_mutable_action_python: MutableAction,
     ) -> None:
         """Should skip actions that fail to resolve."""
         sha = "success1234567890123456789012345678901234"
@@ -106,8 +106,8 @@ class TestResolveActionReferences:
         ]
 
         with pytest.raises(UnknownObjectException):
-            resolve_action_references(
-                [mock_action_ref_checkout, mock_action_ref_python],
+            resolve_mutable_actions(
+                [mock_mutable_action_checkout, mock_mutable_action_python],
                 token="fake-token",
             )
 
@@ -115,14 +115,14 @@ class TestResolveActionReferences:
     def test_resolve_without_token(
         self,
         mock_gh_cls: Mock,
-        mock_action_ref_checkout: ActionReference,
+        mock_mutable_action_checkout: MutableAction,
     ) -> None:
         """Should work without authentication token."""
         sha = "notoken1234567890123456789012345678901234"
         mock_repo = make_repo_mock(branch_sha=sha)
         mock_gh_cls.return_value.get_repo.return_value = mock_repo
 
-        results = resolve_action_references([mock_action_ref_checkout])
+        results = resolve_mutable_actions([mock_mutable_action_checkout])
 
         mock_gh_cls.assert_called_once_with()
         assert len(results) == 1
@@ -132,8 +132,8 @@ class TestResolveActionReferences:
 class TestResolveRefToCommitSha:
     """Test the _resolve_ref_to_commit_sha helper function."""
 
-    def test_resolve_branch(self, mock_action_ref_checkout: ActionReference) -> None:
-        """Should resolve a branch reference."""
+    def test_resolve_branch(self, mock_mutable_action_checkout: MutableAction) -> None:
+        """Should resolve a Git branch reference."""
         sha = "branch1234567890123456789012345678901234"
         mock_gh = Mock()
         mock_repo = make_repo_mock(branch_sha=sha)
@@ -141,19 +141,19 @@ class TestResolveRefToCommitSha:
 
         result_sha = _resolve_ref_to_commit_sha(
             gh=mock_gh,
-            owner=mock_action_ref_checkout.owner,
-            repo=mock_action_ref_checkout.repo,
-            ref=mock_action_ref_checkout.ref,
+            owner=mock_mutable_action_checkout.owner,
+            repo=mock_mutable_action_checkout.repo,
+            ref=mock_mutable_action_checkout.ref,
         )
 
         assert result_sha == "branch1234567890123456789012345678901234"
         mock_gh.get_repo.assert_called_once_with(
-            f"{mock_action_ref_checkout.owner}/{mock_action_ref_checkout.repo}"
+            f"{mock_mutable_action_checkout.owner}/{mock_mutable_action_checkout.repo}"
         )
         mock_repo.get_branch.assert_called_once_with("v4")
 
-    def test_resolve_tag(self, mock_action_ref_checkout: ActionReference) -> None:
-        """Should resolve a tag reference."""
+    def test_resolve_tag(self, mock_mutable_action_checkout: MutableAction) -> None:
+        """Should resolve a Git tag reference."""
         sha = "tag1231234567890123456789012345678901234"
         mock_gh = Mock()
         mock_repo = make_repo_mock(
@@ -164,16 +164,17 @@ class TestResolveRefToCommitSha:
 
         result_sha = _resolve_ref_to_commit_sha(
             gh=mock_gh,
-            owner=mock_action_ref_checkout.owner,
-            repo=mock_action_ref_checkout.repo,
-            ref=mock_action_ref_checkout.ref,
+            owner=mock_mutable_action_checkout.owner,
+            repo=mock_mutable_action_checkout.repo,
+            ref=mock_mutable_action_checkout.ref,
         )
 
         assert result_sha == sha
         mock_repo.get_git_ref.assert_called_once_with("tags/v4")
 
     def test_resolve_annotated_tag(
-        self, mock_action_ref_checkout: ActionReference
+        self,
+        mock_mutable_action_checkout: MutableAction,
     ) -> None:
         """Should handle annotated tags that point to tag objects."""
         sha = "annotatedtag7890123456789012345678901234"
@@ -186,9 +187,9 @@ class TestResolveRefToCommitSha:
 
         result_sha = _resolve_ref_to_commit_sha(
             gh=mock_gh,
-            owner=mock_action_ref_checkout.owner,
-            repo=mock_action_ref_checkout.repo,
-            ref=mock_action_ref_checkout.ref,
+            owner=mock_mutable_action_checkout.owner,
+            repo=mock_mutable_action_checkout.repo,
+            ref=mock_mutable_action_checkout.ref,
         )
 
         assert result_sha == sha
@@ -196,7 +197,8 @@ class TestResolveRefToCommitSha:
         mock_repo.get_git_tag.assert_called_once_with("tag_object_sha")
 
     def test_resolve_nonexistent_repo(
-        self, mock_action_ref_checkout: ActionReference
+        self,
+        mock_mutable_action_checkout: MutableAction,
     ) -> None:
         """Should raise UnknownObjectException for nonexistent repository."""
         mock_gh = Mock()
@@ -205,12 +207,15 @@ class TestResolveRefToCommitSha:
         with pytest.raises(UnknownObjectException):
             _resolve_ref_to_commit_sha(
                 gh=mock_gh,
-                owner=mock_action_ref_checkout.owner,
-                repo=mock_action_ref_checkout.repo,
-                ref=mock_action_ref_checkout.ref,
+                owner=mock_mutable_action_checkout.owner,
+                repo=mock_mutable_action_checkout.repo,
+                ref=mock_mutable_action_checkout.ref,
             )
 
-    def test_resolve_api_error(self, mock_action_ref_checkout: ActionReference) -> None:
+    def test_resolve_api_error(
+        self,
+        mock_mutable_action_checkout: MutableAction,
+    ) -> None:
         """Should raise GithubException on GitHub API errors."""
         mock_gh = Mock()
         mock_gh.get_repo.side_effect = GithubException(429, "Rate limit exceeded")
@@ -218,15 +223,16 @@ class TestResolveRefToCommitSha:
         with pytest.raises(GithubException):
             _resolve_ref_to_commit_sha(
                 gh=mock_gh,
-                owner=mock_action_ref_checkout.owner,
-                repo=mock_action_ref_checkout.repo,
-                ref=mock_action_ref_checkout.ref,
+                owner=mock_mutable_action_checkout.owner,
+                repo=mock_mutable_action_checkout.repo,
+                ref=mock_mutable_action_checkout.ref,
             )
 
     def test_resolve_nonexistent_ref(
-        self, mock_action_ref_checkout: ActionReference
+        self,
+        mock_mutable_action_checkout: MutableAction,
     ) -> None:
-        """Should raise ValueError when ref doesn't exist as branch or tag."""
+        """Should raise ValueError when Git ref doesn't exist as branch or tag."""
         mock_gh = Mock()
         not_found = UnknownObjectException(404, "Not Found")
         mock_repo = make_repo_mock(
@@ -238,7 +244,7 @@ class TestResolveRefToCommitSha:
         with pytest.raises(ValueError, match="was not found on GitHub"):
             _resolve_ref_to_commit_sha(
                 gh=mock_gh,
-                owner=mock_action_ref_checkout.owner,
-                repo=mock_action_ref_checkout.repo,
-                ref=mock_action_ref_checkout.ref,
+                owner=mock_mutable_action_checkout.owner,
+                repo=mock_mutable_action_checkout.repo,
+                ref=mock_mutable_action_checkout.ref,
             )

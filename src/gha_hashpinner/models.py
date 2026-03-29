@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True, kw_only=True)
-class ActionReference:
-    """A GitHub Action reference (value of a `uses: ...` key) in a workflow."""
+class MutableAction:
+    """A GitHub Action specifier (value of a `uses: ...` key) in a workflow."""
 
     owner: str
     repo: str
@@ -19,7 +19,7 @@ class ActionReference:
 
     @property
     def full_string_without_ref(self) -> str:
-        """Full action reference string without ref."""
+        """Full action specifier string without ref."""
         string = f"{self.owner}/{self.repo}"
         if self.subpath:
             string += self.subpath
@@ -34,24 +34,24 @@ class ActionReference:
 
 
 @dataclass(frozen=True, kw_only=True)
-class HashPinnedActionReference:
-    """An ActionReference enriched with an immutable SHA & comment.
+class ImmutableAction:
+    """A MutableAction enriched with an immutable SHA & comment.
 
     The comment represents the original mutable pin, e.g. "v4", and enables Dependabot
     to do automated upgrades.
     """
 
-    action_reference: ActionReference
+    mutable_origin: MutableAction
     sha: str
     comment: str
 
     @property
     def full_string(self) -> str:
-        """Generate a full immutable action reference string.
+        """Generate a full immutable action specifier string.
 
         Does not include a comment, this is just the value for the `uses:` key.
         """
-        return f"{self.action_reference.full_string_without_ref}@{self.sha}"
+        return f"{self.mutable_origin.full_string_without_ref}@{self.sha}"
 
     @property
     def short_string(self) -> str:
@@ -59,4 +59,4 @@ class HashPinnedActionReference:
 
         The commit sha is truncated to 8 chars.
         """
-        return f"{self.action_reference.full_string_without_ref}@{self.sha[:8]}"
+        return f"{self.mutable_origin.full_string_without_ref}@{self.sha[:8]}"

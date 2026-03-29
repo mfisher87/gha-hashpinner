@@ -88,11 +88,11 @@ class TestPinEndToEnd:
 
         assert workflow_file.read_text() == expected
 
-    def test_pin_no_mutable_refs_succeeds(
+    def test_pin_no_mutable_actions_succeeds(
         self,
         make_workflows_dir: MakeWorkflowsDirFunc,
     ) -> None:
-        """Should not raise when no mutable refs found."""
+        """Should not raise when no mutable actions found."""
         project_root = make_workflows_dir({"test.yml": WORKFLOW_WITH_IMMUTABLE_PINS})
         workflow_file = project_root / ".github" / "workflows" / "test.yml"
         expected = workflow_file.read_text()
@@ -107,7 +107,7 @@ class TestPinEndToEnd:
         mock_gh_cls: Mock,
         make_workflows_dir: MakeWorkflowsDirFunc,
     ) -> None:
-        """Should modify the file and raise CheckFailedError in check mode when mutable refs found."""
+        """Should modify the file and raise CheckFailedError in check mode when mutable actions found."""
         project_root = make_workflows_dir({"test.yml": WORKFLOW_WITH_MUTABLE_PINS})
         workflow_file = project_root / ".github" / "workflows" / "test.yml"
         original_content = workflow_file.read_text()
@@ -126,7 +126,7 @@ class TestPinEndToEnd:
         mock_gh_cls: Mock,
         make_workflows_dir: MakeWorkflowsDirFunc,
     ) -> None:
-        """Should raise CheckFailedError without modifying in check+dry-run mode when mutable refs found."""
+        """Should raise CheckFailedError without modifying in check+dry-run mode when mutable actions found."""
         project_root = make_workflows_dir({"test.yml": WORKFLOW_WITH_MUTABLE_PINS})
         workflow_file = project_root / ".github" / "workflows" / "test.yml"
         expected = workflow_file.read_text()

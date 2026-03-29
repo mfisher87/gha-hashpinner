@@ -7,9 +7,9 @@ from rich.panel import Panel
 from rich.table import Table
 
 from gha_hashpinner.exceptions import CheckFailedError
-from gha_hashpinner.models import ActionReference, HashPinnedActionReference
-from gha_hashpinner.parser import find_all_mutable_action_references
-from gha_hashpinner.resolver import resolve_action_references
+from gha_hashpinner.models import ImmutableAction, MutableAction
+from gha_hashpinner.parser import find_all_mutable_actions
+from gha_hashpinner.resolver import resolve_mutable_actions
 from gha_hashpinner.updater import update_workflow_file
 
 console = Console()
@@ -24,17 +24,19 @@ def pin(
 ) -> None:
     """Pin GitHub Actions to immutable SHAs with Dependabot compatibility."""
     try:
-        mutable_refs_by_file = find_all_mutable_action_references(path)
+        mutable_actions_by_file = find_all_mutable_actions(path)
     except (ValueError, FileNotFoundError) as e:
         console.print(f"[red]Error:[/red] {e}")
         raise
 
-    if not mutable_refs_by_file:
+    if not mutable_actions_by_file:
         console.print(f"[yellow]No workflow files found in '{path}'[/yellow]")
 
-    total_refs = sum(len(refs) for refs in mutable_refs_by_file.values())
+    mutable_actions_count = sum(
+        len(actions) for actions in mutable_actions_by_file.values()
+    )
 
-    if total_refs == 0:
+    if mutable_actions_count == 0:
         console.print(
             "[green]✓[/green] All actions are already pinned to immutable SHAs"
         )
@@ -42,83 +44,85 @@ def pin(
 
     _print_header(
         path=path,
-        num_paths=len(mutable_refs_by_file),
-        num_refs=total_refs,
+        paths_count=len(mutable_actions_by_file),
+        mutable_actions_count=mutable_actions_count,
     )
 
-    _process_refs(mutable_refs_by_file, dry_run=dry_run, token=token)
+    process_mutable_actions(mutable_actions_by_file, dry_run=dry_run, token=token)
 
     _print_summary(
-        total_workflows=len(mutable_refs_by_file),
-        total_refs=total_refs,
+        total_workflows=len(mutable_actions_by_file),
+        mutable_actions_count=mutable_actions_count,
         dry_run=dry_run,
     )
 
     if dry_run:
         console.print("\n[dim]Dry run: no changes written[/dim]")
 
-    if check and total_refs > 0:
-        msg = f"{total_refs} unpinned actions found"
+    if check and mutable_actions_count > 0:
+        msg = f"{mutable_actions_count} unpinned actions found"
         console.print(f"\n[red]✗ {msg}[/red]")
         raise CheckFailedError(msg)
 
 
-def _print_header(*, path: Path, num_paths: int, num_refs: int) -> None:
-    """Print a summary of the discovered mutable refs."""
+def _print_header(*, path: Path, paths_count: int, mutable_actions_count: int) -> None:
+    """Print a summary of the discovered mutable actions."""
     console.print(
         Panel.fit(
             f"[bold]Scanned:[/bold] {path}\n"
-            f"[cyan]Found {num_paths} workflow file(s)"
-            f" with {num_refs} mutable reference(s)[/cyan]",
+            f"[cyan]Found {paths_count} workflow file(s)"
+            f" with {mutable_actions_count} mutable action(s)[/cyan]",
             border_style="cyan",
         )
     )
 
 
-def _process_refs(
-    mutable_refs_by_file: dict[Path, list[ActionReference]],
+def process_mutable_actions(
+    mutable_actions_by_file: dict[Path, list[MutableAction]],
     *,
     dry_run: bool,
     token: str | None = None,
 ) -> None:
-    """Iterate over files containing mutable refs and process each."""
-    for workflow_file, mutable_refs in mutable_refs_by_file.items():
+    """Iterate over files containing mutable actions and process each."""
+    for workflow_file, mutable_actions in mutable_actions_by_file.items():
         console.print(f"\n[bold cyan]{workflow_file.name}[/bold cyan]")
 
-        if not mutable_refs:
+        if not mutable_actions:
             console.print("  [green]✓ No mutable action pins found[/green]")
             continue
 
-        immutable_refs = resolve_action_references(mutable_refs, token=token)
+        immutable_actions = resolve_mutable_actions(mutable_actions, token=token)
 
-        if not immutable_refs:
+        if not immutable_actions:
             console.print(
-                "  [yellow]⚠ Could not resolve any action references[/yellow]"
+                "  [yellow]"
+                "⚠ Could not resolve any mutable action specifiers as immutable"
+                "[/yellow]"
             )
 
-        for ref in immutable_refs:
-            _print_change(ref)
+        for immutable in immutable_actions:
+            _print_change(immutable)
 
         if not dry_run:
-            update_workflow_file(workflow_file, refs=immutable_refs)
+            update_workflow_file(workflow_file, immutable_actions=immutable_actions)
 
 
-def _print_change(immutable_ref: HashPinnedActionReference) -> None:
-    """Print a summary of an individual ref transformation."""
-    mutable = immutable_ref.action_reference
+def _print_change(immutable_action: ImmutableAction) -> None:
+    """Print a summary of an individual action's transformation."""
+    mutable = immutable_action.mutable_origin
 
     console.print(
         f"  [green]✓ Line {mutable.line_number:5d}:"
         f" [dim]{mutable.full_string.strip()}[/dim]"
-        f"\n             -> [bold]{immutable_ref.short_string}[/bold]"
-        f" [dim]# {immutable_ref.comment}[/dim]"
+        f"\n             -> [bold]{immutable_action.short_string}[/bold]"
+        f" [dim]# {immutable_action.comment}[/dim]"
     )
 
 
 def _print_summary(
     *,
     total_workflows: int,
-    total_refs: int,
+    mutable_actions_count: int,
     dry_run: bool,
 ) -> None:
     """Print a summary of the final results."""
@@ -127,7 +131,7 @@ def _print_summary(
     table.add_column()
 
     table.add_row("Workflows processed:", str(total_workflows))
-    table.add_row("Mutable refs found:", str(total_refs))
+    table.add_row("Mutable actions found:", str(mutable_actions_count))
 
     if dry_run:
         status = "[yellow]Dry-run: no changes written[/yellow]"

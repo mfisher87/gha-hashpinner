@@ -10,7 +10,7 @@ import pytest
 from gha_hashpinner.parser import (
     _parse_uses_str,
     _parse_workflow_file,
-    find_all_mutable_action_references,
+    find_all_mutable_actions,
 )
 
 from .mock_workflows import (
@@ -141,18 +141,18 @@ class TestParseWorkflowFile:
     ) -> None:
         """Test each mock workflow is parsed as expected."""
         workflow_file = make_workflow_file(content=workflow_content)
-        refs = _parse_workflow_file(workflow_file)
+        actions = _parse_workflow_file(workflow_file)
 
-        assert len(refs) == expected_workflow_count
+        assert len(actions) == expected_workflow_count
         for index, (owner, repo, subpath, ref, full_string, line_number) in enumerate(
             expected_actions
         ):
-            assert refs[index].owner == owner
-            assert refs[index].repo == repo
-            assert refs[index].subpath == subpath
-            assert refs[index].ref == ref
-            assert refs[index].full_string == full_string
-            assert refs[index].line_number == line_number
+            assert actions[index].owner == owner
+            assert actions[index].repo == repo
+            assert actions[index].subpath == subpath
+            assert actions[index].ref == ref
+            assert actions[index].full_string == full_string
+            assert actions[index].line_number == line_number
 
     def test_parse_invalid_yaml(
         self,
@@ -174,11 +174,11 @@ class TestParseWorkflowFile:
         """
         workflow_file = make_workflow_file(content=WORKFLOW_WITH_BORDERLINE_YAML)
 
-        refs = _parse_workflow_file(workflow_file)
-        assert refs == []
+        actions = _parse_workflow_file(workflow_file)
+        assert actions == []
 
 
-class TestFindAllActionReferences:
+class TestFindAllMutableActions:
     """Test the high-level function that handles both files and directories."""
 
     def test_find_from_single_file(
@@ -187,7 +187,7 @@ class TestFindAllActionReferences:
     ) -> None:
         """Should handle a single workflow file."""
         workflow_file = make_workflow_file(content=WORKFLOW_WITH_MUTABLE_PINS)
-        result = find_all_mutable_action_references(workflow_file)
+        result = find_all_mutable_actions(workflow_file)
 
         assert len(result) == 1
         assert workflow_file in result
@@ -205,16 +205,16 @@ class TestFindAllActionReferences:
             }
         )
 
-        result = find_all_mutable_action_references(mock_root)
+        result = find_all_mutable_actions(mock_root)
 
         assert len(result) == 2
         assert all(path.parent.name == "workflows" for path in result)
 
-    def test_find_excludes_files_with_no_mutable_refs(
+    def test_find_excludes_files_with_no_mutable_actions(
         self,
         make_workflows_dir: MakeWorkflowsDirFunc,
     ) -> None:
-        """Should only return files that have mutable references."""
+        """Should only return files that have mutable actions."""
         mock_root = make_workflows_dir(
             {
                 "mutable.yml": WORKFLOW_WITH_MUTABLE_PINS,
@@ -222,7 +222,7 @@ class TestFindAllActionReferences:
             }
         )
 
-        result = find_all_mutable_action_references(mock_root)
+        result = find_all_mutable_actions(mock_root)
 
         assert len(result) == 2
 
@@ -237,7 +237,7 @@ class TestFindAllActionReferences:
     def test_find_raises_for_nonexistent_path(self) -> None:
         """Should raise FileNotFoundError for nonexistent path."""
         with pytest.raises(FileNotFoundError):
-            find_all_mutable_action_references(Path("/nonexistent/path"))
+            find_all_mutable_actions(Path("/nonexistent/path"))
 
 
 class TestParseUsesStr:
@@ -255,6 +255,6 @@ class TestParseUsesStr:
     )
     def test_parse_uses_str(self, uses_str: str) -> None:
         """Should parse without error."""
-        action_ref = _parse_uses_str(uses_str, line_no=1)
-        assert action_ref is not None
-        assert action_ref.full_string == uses_str
+        action = _parse_uses_str(uses_str, line_no=1)
+        assert action is not None
+        assert action.full_string == uses_str
