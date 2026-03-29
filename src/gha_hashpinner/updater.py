@@ -66,10 +66,10 @@ def _replace_action_in_line(
         raise ValueError(f"Failed to find 'uses:' key in line:\n  '{line}'")
 
     return (
-        f"{match.group(1)}"
-        f"{match.group(2)}"
+        f"{match.group('key')}"
+        f"{match.group('quote_open')}"
         f"{immutable_action.full_string}"
-        f"{match.group(3)}"
+        f"{match.group('quote_close')}"
         f"  # {immutable_action.comment}"
-        f"{match.group(4)}"
+        f"{match.group('line_ending')}"
     )

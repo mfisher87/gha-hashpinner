@@ -18,7 +18,7 @@ SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 
 _USES_PATTERN_KEY = r"^\s*-?\s*uses:\s+"  # with leading and trailing whitespace
 _USES_PATTERN_OPTIONAL_QUOTE = r"[\"']?"
-_USES_PATTERN_SPEC_CAPTURE = r"([^\"'#\s]+)"
+_USES_PATTERN_SPEC_CAPTURE = r"(?P<action_spec>[^\"'#\s]+)"
 
 # Extract the action specifier from a line containing a "uses: ..." key
 USES_PATTERN = re.compile(
@@ -28,13 +28,12 @@ USES_PATTERN = re.compile(
 
 def action_updater_regex(mutable_action: MutableAction) -> re.Pattern[str]:
     """Generate a regex to be used for updating an action specifier to immutable."""
-    # TODO: Named groups
     return re.compile(
-        rf"({_USES_PATTERN_KEY})"  # Group 1
-        rf"({_USES_PATTERN_OPTIONAL_QUOTE})"  # Group 2
+        rf"(?P<key>{_USES_PATTERN_KEY})"
+        rf"(?P<quote_open>{_USES_PATTERN_OPTIONAL_QUOTE})"
         + re.escape(mutable_action.full_string)  # The original action specifier string
-        + rf"({_USES_PATTERN_OPTIONAL_QUOTE})"  # Group 3
+        + rf"(?P<quote_close>{_USES_PATTERN_OPTIONAL_QUOTE})"
         r"[ \t]*"  # Trailing whitespace after specifier value
         r"#*[^\r\n]*"  # Optional comment
-        r"(\r?\n?)$"  # Group 4: Line ending
+        r"(?P<line_ending>\r?\n?)$"
     )
