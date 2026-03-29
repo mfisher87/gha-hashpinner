@@ -1,12 +1,12 @@
-"""Tests for the cli module."""
+"""End-to-end tests of the pinning behavior."""
 
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
-import typer
 
-from gha_hashpinner.cli import pin
+from gha_hashpinner.exceptions import CheckFailedError
+from gha_hashpinner.pinner import pin
 
 from .helpers import make_repo_mock
 from .mock_workflows import (
@@ -88,28 +88,26 @@ class TestPinEndToEnd:
 
         assert workflow_file.read_text() == expected
 
-    def test_pin_no_mutable_refs_exits_zero(
+    def test_pin_no_mutable_refs_succeeds(
         self,
         make_workflows_dir: MakeWorkflowsDirFunc,
     ) -> None:
-        """Should exit with code 0 when no mutable refs found."""
+        """Should not raise when no mutable refs found."""
         project_root = make_workflows_dir({"test.yml": WORKFLOW_WITH_IMMUTABLE_PINS})
         workflow_file = project_root / ".github" / "workflows" / "test.yml"
         expected = workflow_file.read_text()
 
-        with pytest.raises(typer.Exit) as exc_info:
-            pin(path=project_root, token="fake-token", dry_run=False, check=False)
+        pin(path=project_root, token="fake-token", dry_run=False, check=False)
 
-        assert exc_info.value.exit_code == 0
         assert workflow_file.read_text() == expected
 
     @patch_gh_client
-    def test_pin_check_mode_exits_one(
+    def test_pin_check_mode_raises(
         self,
         mock_gh_cls: Mock,
         make_workflows_dir: MakeWorkflowsDirFunc,
     ) -> None:
-        """Should modify the file exit with code 1 in check mode when mutable refs found."""
+        """Should modify the file and raise CheckFailedError in check mode when mutable refs found."""
         project_root = make_workflows_dir({"test.yml": WORKFLOW_WITH_MUTABLE_PINS})
         workflow_file = project_root / ".github" / "workflows" / "test.yml"
         original_content = workflow_file.read_text()
@@ -117,19 +115,18 @@ class TestPinEndToEnd:
         mock_repo = make_repo_mock(branch_sha="abcd1234" * 5)
         mock_gh_cls.return_value.get_repo.return_value = mock_repo
 
-        with pytest.raises(typer.Exit) as exc_info:
+        with pytest.raises(CheckFailedError):
             pin(path=project_root, token="fake-token", dry_run=False, check=True)
 
-        assert exc_info.value.exit_code == 1
         assert workflow_file.read_text() != original_content
 
     @patch_gh_client
-    def test_pin_dry_run_and_check_mode_exits_one_no_changes(
+    def test_pin_dry_run_and_check_mode_raise_no_changes(
         self,
         mock_gh_cls: Mock,
         make_workflows_dir: MakeWorkflowsDirFunc,
     ) -> None:
-        """Should exit with code 1 without modifying in check+dry-run mode when mutable refs found."""
+        """Should raise CheckFailedError without modifying in check+dry-run mode when mutable refs found."""
         project_root = make_workflows_dir({"test.yml": WORKFLOW_WITH_MUTABLE_PINS})
         workflow_file = project_root / ".github" / "workflows" / "test.yml"
         expected = workflow_file.read_text()
@@ -137,10 +134,9 @@ class TestPinEndToEnd:
         mock_repo = make_repo_mock(branch_sha="abcd1234" * 5)
         mock_gh_cls.return_value.get_repo.return_value = mock_repo
 
-        with pytest.raises(typer.Exit) as exc_info:
+        with pytest.raises(CheckFailedError):
             pin(path=project_root, token="fake-token", dry_run=True, check=True)
 
-        assert exc_info.value.exit_code == 1
         assert workflow_file.read_text() == expected
 
     @patch_gh_client
@@ -169,17 +165,15 @@ class TestPinEndToEnd:
         assert f"@{sha}" in target_file.read_text()
         assert other_file.read_text() == original_other_content
 
-    def test_pin_invalid_path_exits_one(self) -> None:
-        """Should exit with code 1 for invalid path."""
-        with pytest.raises(typer.Exit) as exc_info:
+    def test_pin_invalid_path_raises(self) -> None:
+        """Should raise FileNotFoundError for invalid path."""
+        with pytest.raises(FileNotFoundError):
             pin(
                 path=Path("/nonexistent/path"),
                 token="fake-token",
                 dry_run=False,
                 check=False,
             )
-
-        assert exc_info.value.exit_code == 1
 
     @patch_gh_client
     def test_pin_without_token(
