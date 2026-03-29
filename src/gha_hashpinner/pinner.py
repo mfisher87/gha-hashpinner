@@ -35,7 +35,6 @@ def pin(
         raise NoWorkflowsFoundError(msg)
 
     mutable_actions_count = sum(len(wf.mutable_actions) for wf in workflow_files)
-
     if mutable_actions_count == 0:
         console.print(
             "[green]✓ All actions are already pinned to immutable SHAs[/green]"
