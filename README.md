@@ -103,6 +103,11 @@ tools like this.
 
 ## Limitations
 
+* Does not update your actions -- only pins them immutably to the same version they're
+  already pinned to.
+  I recommend using Dependabot (with a
+  [cooldown](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference#cooldown-))
+  to upgrade your actions after pinning with this tool.
 * This tool detects mutable refs with regex, i.e. a 40-character hexadecimal string is
   considered to be an immutable ref.
   There's no way to be sure without making API calls.
