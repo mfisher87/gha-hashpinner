@@ -86,6 +86,7 @@ class TestPatterns:
     def test_uses_pattern_matches(self, uses: str, expected: str) -> None:
         """USES_PATTERN should match valid strings."""
         match = USES_PATTERN.match(uses)
+        assert match is not None
         assert match.group("action_spec") == expected
 
     @pytest.mark.parametrize(
