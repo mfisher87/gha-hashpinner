@@ -10,7 +10,7 @@ from textwrap import dedent
 
 import pytest
 
-from gha_hashpinner.workflow import WorkflowFile, _replace_action_in_line
+from gha_hashpinner.workflow import WorkflowFile
 
 from .helpers import make_immutable_action, make_mutable_action
 from .mock_workflows import (
@@ -455,7 +455,7 @@ class TestReplaceActionInLine:
         Comments should be replaced. Formatting (i.e. indentation and leading spaces)
         should be unaltered.
         """
-        actual = _replace_action_in_line(
+        actual = WorkflowFile._replace_action_in_line(
             line,
             immutable_action=make_immutable_action(),
         )
@@ -486,5 +486,5 @@ class TestReplaceActionInLine:
             sha="abc123def456abc123def456abc123def456abc1",
         )
 
-        actual = _replace_action_in_line(line, immutable_action=immutable)
+        actual = WorkflowFile._replace_action_in_line(line, immutable_action=immutable)
         assert actual == expected
