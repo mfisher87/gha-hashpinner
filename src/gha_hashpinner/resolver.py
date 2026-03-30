@@ -60,16 +60,6 @@ class Resolver:
             sha=sha,
         )
 
-    def _get_repo(
-        self,
-        *,
-        owner: str,
-        repo: str,
-    ) -> Repository:
-        repo_obj = self.client.get_repo(f"{owner}/{repo}")
-        self._gh_api_requests_count += 1
-        return repo_obj
-
     def _resolve_to_commit_sha(
         self,
         *,
@@ -118,6 +108,16 @@ class Resolver:
         raise NoGitRefFoundError(
             f"The Git ref '{ref}' was not found on GitHub as a tag or branch."
         )
+
+    def _get_repo(
+        self,
+        *,
+        owner: str,
+        repo: str,
+    ) -> Repository:
+        repo_obj = self.client.get_repo(f"{owner}/{repo}")
+        self._gh_api_requests_count += 1
+        return repo_obj
 
     def _resolve_branch(self, *, repo: Repository, branch_name: str) -> str | None:
         """Attempt to resolve a Git ref as a branch.
