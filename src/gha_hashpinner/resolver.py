@@ -1,5 +1,7 @@
 """Resolves mutable pins to immutable pins by querying the GitHub API."""
 
+from functools import cache
+
 from github import Github, UnknownObjectException
 from github.Repository import Repository
 
@@ -16,14 +18,12 @@ class Resolver:
     """
 
     token: str | None
-    _cache: dict[tuple[str, str, str], str]
     _client: Github | None
     _gh_api_requests_count: int
 
     def __init__(self, *, token: str | None = None) -> None:
         """Initiatilize a resolver with an optional token."""
         self.token = token
-        self._cache = {}
         self._client = None
         self._gh_api_requests_count = 0
 
@@ -60,6 +60,7 @@ class Resolver:
             sha=sha,
         )
 
+    @cache  # noqa: B019
     def _resolve_to_commit_sha(
         self,
         *,
@@ -84,12 +85,6 @@ class Resolver:
             NoGitRepoFoundError: The provided Git repository wasn't found on GitHub
 
         """
-        cache_key = (owner, repo, ref)
-
-        cached = self._cache.get(cache_key, None)
-        if cached is not None:
-            return cached
-
         try:
             repo_obj = self._get_repo(owner=owner, repo=repo)
         except UnknownObjectException as e:
@@ -98,17 +93,16 @@ class Resolver:
             ) from e
 
         if sha := self._resolve_branch(repo=repo_obj, branch_name=ref):
-            self._cache[cache_key] = sha
             return sha
 
         if sha := self._resolve_tag(repo=repo_obj, tag_name=ref):
-            self._cache[cache_key] = sha
             return sha
 
         raise NoGitRefFoundError(
             f"The Git ref '{ref}' was not found on GitHub as a tag or branch."
         )
 
+    @cache  # noqa: B019
     def _get_repo(
         self,
         *,
