@@ -11,7 +11,7 @@ from gha_hashpinner.regex.updater import action_updater_regex
 from gha_hashpinner.regex.uses import USES_PATTERN
 
 
-@dataclass
+@dataclass(frozen=True)
 class WorkflowFile:
     """Interface for interacting with a GitHub Actions workflow config file."""
 

@@ -1,7 +1,5 @@
 """Resolves mutable pins to immutable pins by querying the GitHub API."""
 
-from dataclasses import dataclass, field
-
 from github import Github, UnknownObjectException
 from github.Repository import Repository
 
@@ -9,7 +7,6 @@ from gha_hashpinner.action import ImmutableAction, MutableAction
 from gha_hashpinner.exceptions import NoGitRefFoundError, NoGitRepoFoundError
 
 
-@dataclass(kw_only=True)
 class Resolver:
     """Resolves mutable actions to immutable actions using GitHub API.
 
@@ -18,9 +15,14 @@ class Resolver:
 
     """
 
-    token: str | None = None
-    _cache: dict[tuple[str, str, str], str] = field(default_factory=dict)
-    _client: Github | None = field(default=None, init=False)
+    token: str | None
+    _cache: dict[tuple[str, str, str], str]
+    _client: Github | None = None
+
+    def __init__(self, *, token: str | None = None) -> None:
+        """Initiatilize a resolver with an optional token."""
+        self.token = token
+        self._cache = {}
 
     @property
     def client(self) -> Github:
