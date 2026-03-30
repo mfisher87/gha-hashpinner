@@ -58,7 +58,7 @@ def cli_root(
 ) -> None:
     """Pin GitHub Actions to immutable SHAs with Dependabot compatibility."""
     if version:
-        console.print(f"gha-hashpinner version: {__version__}")
+        console.print(f"gha-hashpinner version: {__version__}", highlight=False)
         raise typer.Exit(0)
 
     try:
