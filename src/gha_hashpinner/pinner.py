@@ -9,7 +9,7 @@ from rich.table import Table
 from gha_hashpinner.action import ImmutableAction
 from gha_hashpinner.discoverer import scan_path
 from gha_hashpinner.exceptions import CheckFailedError, NoWorkflowsFoundError
-from gha_hashpinner.resolver import resolve_mutable_actions
+from gha_hashpinner.resolver import Resolver
 from gha_hashpinner.workflow import WorkflowFile
 
 console = Console()
@@ -25,7 +25,7 @@ def pin(
     """Pin GitHub Actions to immutable SHAs with Dependabot compatibility."""
     try:
         workflow_files = scan_path(path)
-    except (ValueError, FileNotFoundError) as e:
+    except FileNotFoundError as e:
         console.print(f"[red]Error:[/red] {e}")
         raise
 
@@ -47,7 +47,8 @@ def pin(
         mutable_actions_count=mutable_actions_count,
     )
 
-    _process_workflow_files(workflow_files, dry_run=dry_run, token=token)
+    resolver = Resolver(token=token)
+    _process_workflow_files(workflow_files, dry_run=dry_run, resolver=resolver)
 
     _print_summary(
         workflows_count=len(workflow_files),
@@ -85,7 +86,7 @@ def _process_workflow_files(
     workflow_files: list[WorkflowFile],
     *,
     dry_run: bool,
-    token: str | None = None,
+    resolver: Resolver,
 ) -> None:
     """Iterate over files containing mutable actions and process each."""
     for workflow_file in workflow_files:
@@ -95,10 +96,10 @@ def _process_workflow_files(
             console.print("  [green]✓ No mutable action pins found[/green]")
             continue
 
-        immutable_actions = resolve_mutable_actions(
-            workflow_file.mutable_actions,
-            token=token,
-        )
+        immutable_actions = [
+            mutable_action.resolve(resolver=resolver)
+            for mutable_action in workflow_file.mutable_actions
+        ]
 
         if not immutable_actions:
             console.print(

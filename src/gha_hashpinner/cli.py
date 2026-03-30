@@ -4,11 +4,13 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from rich.console import Console
 
+from gha_hashpinner.exceptions import CheckFailedError, NoWorkflowsFoundError
 from gha_hashpinner.pinner import pin
 
 cli = typer.Typer()
-
+console = Console()
 CWD = Path.cwd()
 
 
@@ -49,8 +51,11 @@ def cli_root(
     """Pin GitHub Actions to immutable SHAs with Dependabot compatibility."""
     try:
         pin(path=path, token=token, dry_run=dry_run, check=check)
-    except Exception as e:
+    except (NoWorkflowsFoundError, CheckFailedError, FileNotFoundError) as e:
         raise typer.Exit(code=1) from e
+    except Exception as e:
+        console.print(f"[red]Unexpected error:[/red] {e}")
+        raise
 
 
 if __name__ == "__main__":

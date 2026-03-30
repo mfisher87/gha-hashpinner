@@ -1,10 +1,16 @@
 """Behaviors for interacting with individual action specifiers."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Self
+from functools import cached_property
+from typing import TYPE_CHECKING, Self
 
 from gha_hashpinner.regex.action import ACTION_PATTERN
 from gha_hashpinner.regex.sha import SHA_PATTERN
+
+if TYPE_CHECKING:
+    from gha_hashpinner.resolver import Resolver
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -28,7 +34,7 @@ class MutableAction:
                 f"subpath attribute must start with '/'. Received {self.subpath}"
             )
 
-    @property
+    @cached_property
     def full_string_without_ref(self) -> str:
         """Full action specifier string without ref."""
         string = f"{self.owner}/{self.repo}"
@@ -74,6 +80,18 @@ class MutableAction:
             full_string=action_specifier,
         )
 
+    def resolve(self, *, resolver: Resolver) -> ImmutableAction:
+        """Resolve a mutable action to an immutable one.
+
+        Args:
+            resolver: A `Resolver` instance to use for resolution
+
+        Returns:
+            An `ImmutableAction`
+
+        """
+        return resolver.resolve(self)
+
 
 @dataclass(frozen=True, kw_only=True)
 class ImmutableAction:
@@ -87,7 +105,7 @@ class ImmutableAction:
     sha: str
     comment: str
 
-    @property
+    @cached_property
     def full_string(self) -> str:
         """Generate a full immutable action specifier string.
 
@@ -95,7 +113,7 @@ class ImmutableAction:
         """
         return f"{self.mutable_origin.full_string_without_ref}@{self.sha}"
 
-    @property
+    @cached_property
     def short_string(self) -> str:
         """A short string representation of `full_string` for console output.
 
