@@ -11,7 +11,7 @@ from .types import MakeWorkflowsDirFunc
 
 
 class TestDiscoverWorkflowFiles:
-    """Test discovering workflow files in a directory."""
+    """Test _discover_workflow_files function."""
 
     def test_discover_yml_and_yaml_files(
         self,
@@ -77,6 +77,11 @@ class TestDiscoverWorkflowFiles:
 
         files = _discover_workflow_files(mock_root)
         assert files == []
+
+    def test_discover_raises_if_nonexistent_path(self) -> None:
+        """Should raise if a nonexistent path is used."""
+        with pytest.raises(FileNotFoundError):
+            _discover_workflow_files(Path("/nonexistent/path"))
 
     def test_discover_raises_if_no_workflows_dir(self, tmp_path: Path) -> None:
         """Should raise FileNotFoundError if .github/workflows doesn't exist."""

@@ -103,20 +103,7 @@ class WorkflowFile:
             ValueError: When regex matching fails to parse the file content
 
         """
-        pattern = action_updater_regex(immutable_action.mutable_origin)
-
-        match = pattern.match(line)
-        if match is None:
-            raise ValueError(f"Failed to find 'uses:' key in line:\n  '{line}'")
-
-        return (
-            f"{match.group('key')}"
-            f"{match.group('quote_open')}"
-            f"{immutable_action.full_string}"
-            f"{match.group('quote_close')}"
-            f"  # {immutable_action.comment}"
-            f"{match.group('line_ending')}"
-        )
+        return _replace_action_in_line(line, immutable_action=immutable_action)
 
     def _validate_yaml(self) -> None:
         """Ensure the workflow file is valid YAML."""
@@ -124,3 +111,41 @@ class WorkflowFile:
             yaml.safe_load(self.content)
         except yaml.YAMLError as e:
             raise ValueError(f"Invalid YAML in {self.path}: {e}") from e
+
+
+def _replace_action_in_line(
+    line: str,
+    *,
+    immutable_action: ImmutableAction,
+) -> str:
+    """Replace a single line's mutable action specifier with an immutable one.
+
+    Includes a comment with the intended mutable Git ref for dependabot.
+
+    Preserves indentation and quote style. Does not preserve existing comments.
+
+    Args:
+        line: The original line containing the original action specifier
+        immutable_action: The hash-pinned action specifier to replace the original
+
+    Returns:
+        Updated line with immutable specifier and comment
+
+    Raises:
+        ValueError: When regex matching fails to parse the file content
+
+    """
+    pattern = action_updater_regex(immutable_action.mutable_origin)
+
+    match = pattern.match(line)
+    if match is None:
+        raise ValueError(f"Failed to find 'uses:' key in line:\n  '{line}'")
+
+    return (
+        f"{match.group('key')}"
+        f"{match.group('quote_open')}"
+        f"{immutable_action.full_string}"
+        f"{match.group('quote_close')}"
+        f"  # {immutable_action.comment}"
+        f"{match.group('line_ending')}"
+    )

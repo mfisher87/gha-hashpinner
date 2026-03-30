@@ -81,6 +81,10 @@ class TestPatterns:
             ('uses:     "foo/bar"', "foo/bar"),
             (" - uses: 'foo/bar@baz' # comment", "foo/bar@baz"),
             ('   -   uses: "foo/bar@baz" # comment', "foo/bar@baz"),
+            (
+                "  - uses: 'jupyterlab/maintainer-tools/.github/actions/enforce-label@v1'",
+                "jupyterlab/maintainer-tools/.github/actions/enforce-label@v1",
+            ),
         ],
     )
     def test_uses_pattern_matches(self, uses: str, expected: str) -> None:

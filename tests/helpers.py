@@ -2,6 +2,8 @@
 
 from unittest.mock import Mock
 
+from gha_hashpinner.action import ImmutableAction, MutableAction
+
 
 def make_branch_mock(*, sha: str) -> Mock:
     """Create a mock branch with the given SHA."""
@@ -71,3 +73,42 @@ def make_repo_mock(
         repo.get_git_ref.side_effect = tag_error
 
     return repo
+
+
+def make_mutable_action(
+    *,
+    owner: str = "actions",
+    repo: str = "checkout",
+    ref: str = "v4",
+    line_number: int = 10,
+    subpath: str | None = None,
+) -> MutableAction:
+    """Build a MutableAction with sensible defaults."""
+    full_string = f"{owner}/{repo}"
+    if subpath:
+        full_string += subpath
+    full_string += f"@{ref}"
+
+    return MutableAction(
+        owner=owner,
+        repo=repo,
+        ref=ref,
+        line_number=line_number,
+        full_string=full_string,
+        subpath=subpath,
+    )
+
+
+def make_immutable_action(
+    *,
+    mutable_origin: MutableAction | None = None,
+    sha: str = "abc123def456abc123def456abc123def456abc1",
+) -> ImmutableAction:
+    """Build an ImmutableAction with sensible defaults."""
+    if mutable_origin is None:
+        mutable_origin = make_mutable_action()
+
+    return ImmutableAction(
+        mutable_origin=mutable_origin,
+        sha=sha,
+    )
