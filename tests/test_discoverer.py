@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from gha_hashpinner.discoverer import discover_workflow_files
+from gha_hashpinner.discoverer import _discover_workflow_files
 
 from .mock_workflows import WORKFLOW_WITH_MUTABLE_PINS
 from .types import MakeWorkflowsDirFunc
@@ -26,10 +26,10 @@ class TestDiscoverWorkflowFiles:
             }
         )
 
-        files = discover_workflow_files(mock_root)
+        files = _discover_workflow_files(mock_root)
 
         assert len(files) == 3
-        assert all(f.suffix in [".yml", ".yaml"] for f in files)
+        assert all(f.path.suffix in [".yml", ".yaml"] for f in files)
 
     def test_discover_returns_sorted_paths(
         self,
@@ -44,11 +44,11 @@ class TestDiscoverWorkflowFiles:
             }
         )
 
-        files = discover_workflow_files(mock_root)
+        files = _discover_workflow_files(mock_root)
 
-        assert files[0].name == "a.yaml"
-        assert files[1].name == "m.yml"
-        assert files[2].name == "z.yml"
+        assert files[0].path.name == "a.yaml"
+        assert files[1].path.name == "m.yml"
+        assert files[2].path.name == "z.yml"
 
     def test_discover_ignores_non_workflow_files(
         self,
@@ -63,10 +63,10 @@ class TestDiscoverWorkflowFiles:
             }
         )
 
-        files = discover_workflow_files(mock_root)
+        files = _discover_workflow_files(mock_root)
 
         assert len(files) == 1
-        assert files[0].name == "test.yml"
+        assert files[0].path.name == "test.yml"
 
     def test_discover_returns_empty_if_workflows_dir_empty(
         self,
@@ -75,7 +75,7 @@ class TestDiscoverWorkflowFiles:
         """Should return an empty list if .github/workflows is empty."""
         mock_root = make_workflows_dir({})
 
-        files = discover_workflow_files(mock_root)
+        files = _discover_workflow_files(mock_root)
         assert files == []
 
     def test_discover_raises_if_no_workflows_dir(self, tmp_path: Path) -> None:
@@ -84,12 +84,12 @@ class TestDiscoverWorkflowFiles:
         github_dir.mkdir()
 
         with pytest.raises(FileNotFoundError):
-            discover_workflow_files(tmp_path)
+            _discover_workflow_files(tmp_path)
 
     def test_discover_raises_if_no_github_dir(self, tmp_path: Path) -> None:
         """Should raise FileNotFoundError if .github/workflows doesn't exist."""
         with pytest.raises(FileNotFoundError):
-            discover_workflow_files(tmp_path)
+            _discover_workflow_files(tmp_path)
 
     def test_discover_raises_if_workflows_is_file(self, tmp_path: Path) -> None:
         """Should raise FileNotFoundError if .github/workflows is not a directory."""
@@ -98,4 +98,4 @@ class TestDiscoverWorkflowFiles:
         (github_dir / "workflows").write_text("not a directory")
 
         with pytest.raises(FileNotFoundError):
-            discover_workflow_files(tmp_path)
+            _discover_workflow_files(tmp_path)
