@@ -17,12 +17,13 @@ class Resolver:
 
     token: str | None
     _cache: dict[tuple[str, str, str], str]
-    _client: Github | None = None
+    _client: Github | None
 
     def __init__(self, *, token: str | None = None) -> None:
         """Initiatilize a resolver with an optional token."""
         self.token = token
         self._cache = {}
+        self._client = None
 
     @property
     def client(self) -> Github:
