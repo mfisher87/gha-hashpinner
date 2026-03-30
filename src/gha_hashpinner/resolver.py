@@ -18,12 +18,14 @@ class Resolver:
     token: str | None
     _cache: dict[tuple[str, str, str], str]
     _client: Github | None
+    _gh_api_requests_count: int
 
     def __init__(self, *, token: str | None = None) -> None:
         """Initiatilize a resolver with an optional token."""
         self.token = token
         self._cache = {}
         self._client = None
+        self._gh_api_requests_count = 0
 
     @property
     def client(self) -> Github:
@@ -31,6 +33,11 @@ class Resolver:
         if self._client is None:
             self._client = Github(self.token) if self.token else Github()
         return self._client
+
+    @property
+    def gh_api_requests_count(self) -> int:
+        """The number of requests against the GitHub API that were performed."""
+        return self._gh_api_requests_count
 
     def resolve(self, mutable_action: MutableAction) -> ImmutableAction:
         """Resolve a `MutableAction` to an `ImmutableAction`.
@@ -52,6 +59,16 @@ class Resolver:
             mutable_origin=mutable_action,
             sha=sha,
         )
+
+    def _get_repo(
+        self,
+        *,
+        owner: str,
+        repo: str,
+    ) -> Repository:
+        repo_obj = self.client.get_repo(f"{owner}/{repo}")
+        self._gh_api_requests_count += 1
+        return repo_obj
 
     def _resolve_to_commit_sha(
         self,
@@ -84,7 +101,7 @@ class Resolver:
             return cached
 
         try:
-            repo_obj = self.client.get_repo(f"{owner}/{repo}")
+            repo_obj = self._get_repo(owner=owner, repo=repo)
         except UnknownObjectException as e:
             raise NoGitRepoFoundError(
                 f"Git repository {owner}/{repo} not found on GitHub.",
@@ -114,9 +131,12 @@ class Resolver:
 
         """
         try:
-            return repo.get_branch(branch_name).commit.sha
+            sha = repo.get_branch(branch_name).commit.sha
+            self._gh_api_requests_count += 1
         except UnknownObjectException:
             return None
+
+        return sha
 
     def _resolve_tag(self, *, repo: Repository, tag_name: str) -> str | None:
         """Attempt to resolve a Git ref as a tag.
@@ -131,12 +151,14 @@ class Resolver:
         """
         try:
             ref = repo.get_git_ref(f"tags/{tag_name}")
+            self._gh_api_requests_count += 1
 
             if ref.object.type == "tag":
                 # Annotated tag: These are separate git objects. We need to get the tag
                 # object before dereferencing.
                 # The ref.object.sha seems to be a magic string "tag_object_sha" here:
                 sha = repo.get_git_tag(ref.object.sha).object.sha
+                self._gh_api_requests_count += 1
             else:
                 # Lightweight tag: Simple pointer. We just need to dereference it.
                 sha = ref.object.sha

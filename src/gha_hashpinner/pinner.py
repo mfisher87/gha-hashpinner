@@ -53,6 +53,7 @@ def pin(
     _print_summary(
         workflows_count=len(workflow_files),
         mutable_actions_count=mutable_actions_count,
+        gh_api_requests_count=resolver.gh_api_requests_count,
         dry_run=dry_run,
     )
 
@@ -131,6 +132,7 @@ def _print_summary(
     *,
     workflows_count: int,
     mutable_actions_count: int,
+    gh_api_requests_count: int,
     dry_run: bool,
 ) -> None:
     """Print a summary of the final results."""
@@ -140,6 +142,7 @@ def _print_summary(
 
     table.add_row("Workflows processed:", str(workflows_count))
     table.add_row("Mutable actions found:", str(mutable_actions_count))
+    table.add_row("GitHub API request count:", str(gh_api_requests_count))
 
     if dry_run:
         status = "[yellow]Dry-run: no changes written[/yellow]"
