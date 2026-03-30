@@ -81,7 +81,14 @@ TODO
 
 ### With [pre-commit](pre-commit.com) / [prek](https://prek.j178.dev/)
 
-TODO
+Add to `.pre-commit-config.yaml` in your repo:
+
+```yaml
+  - repo: "https://github.com/mfisher87/gha-hashpinner"
+    rev: "<commit sha here>"
+    hooks:
+      - id: "gha-hashpinner-check"
+```
 
 
 ## Alternatives
