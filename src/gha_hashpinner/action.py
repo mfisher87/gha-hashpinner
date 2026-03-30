@@ -103,7 +103,11 @@ class ImmutableAction:
 
     mutable_origin: MutableAction
     sha: str
-    comment: str
+
+    @cached_property
+    def comment(self) -> str:
+        """The comment to be applied for Dependabot compatibility."""
+        return self.mutable_origin.ref
 
     @cached_property
     def full_string(self) -> str:

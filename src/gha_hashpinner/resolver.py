@@ -48,7 +48,6 @@ class Resolver:
         return ImmutableAction(
             mutable_origin=mutable_action,
             sha=sha,
-            comment=mutable_action.ref,
         )
 
     def _resolve_to_commit_sha(
